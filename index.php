@@ -8,8 +8,8 @@
  * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-require_once(__DIR__ . "/../../interface/globals.php");
+require_once($GLOBALS['rootdir'] . "globals.php");
 
-use Modules\oeFax\Controller\AppDispatch;
+use OpenEMR\Modules\oeFax\Controller\AppDispatch;
 
 AppDispatch::getApiService();

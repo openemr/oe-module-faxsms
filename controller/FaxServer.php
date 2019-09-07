@@ -9,7 +9,7 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 $ignoreAuth = 1;
-require_once(__DIR__ . "/../../../interface/globals.php");
+require_once($GLOBALS['rootdir'] . "globals.php");
 
 use OpenEMR\Common\Crypto\CryptoGen;
 
@@ -34,7 +34,6 @@ class FaxServer
     {
         $action = $_GET['_FAX'];
         // allow only what we want
-
         if ($action) {
             if (method_exists($this, $action)) {
                 call_user_func(array($this, $action), array());
