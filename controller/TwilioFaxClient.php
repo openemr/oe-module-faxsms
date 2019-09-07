@@ -111,7 +111,6 @@ class TwilioFaxClient extends AppDispatch
             return 'Error';
         }
         if (!file_exists($this->baseDir . '/send')) {
-            // create setup json credentials from default template
             mkdir($this->baseDir . '/send', 0777, true);
         }
         // add to fax queue

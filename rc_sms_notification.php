@@ -10,7 +10,7 @@
 // Rework of original
 ////////////////////////////////////////////////////////////////////
 //hack add for command line version
-use Modules\oeFax\Controller\AppDispatch;
+use OpenEMR\Modules\oeFax\Controller\AppDispatch;
 
 $_SERVER['REQUEST_URI'] = $_SERVER['PHP_SELF'];
 $_SERVER['SERVER_NAME'] = 'localhost';
@@ -27,8 +27,7 @@ if ($argc > 1 && empty($_SESSION['site_id']) && empty($_GET['site'])) {
     $_GET['site'] = isset($args[1]) ? $args[1] : 'default';
 }
 
-$ignoreAuth = 1;
-require_once("../../interface/globals.php");
+require_once($GLOBALS['rootdir'] . "globals.php");
 require_once("$srcdir/appointments.inc.php");
 
 $clientApp = AppDispatch::getApiService();
@@ -60,7 +59,7 @@ $db_sms_msg['message'] = $MESSAGE;
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Conrjob - SMS Notification</title>
+        <title><?php echo xlt("SMS Notification") ?></title>
     </head>
     <style>
         html {

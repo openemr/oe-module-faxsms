@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-namespace Modules\oeFax\Controller;
+namespace OpenEMR\Modules\oeFax\Controller;
 
 use OpenEMR\Common\Crypto\CryptoGen;
 use RingCentral\SDK\Http\ApiException;
@@ -198,7 +198,7 @@ class RCFaxClient extends AppDispatch
 
     public function getStoredDoc()
     {
-        $docuri = $this->getRequest(docuri);
+        $docuri = $this->getRequest('docuri');
         $uri = $docuri;
         if (!$this->authenticate()) {
             return xlj('Error: Authentication Service Denies Access.');
@@ -206,21 +206,15 @@ class RCFaxClient extends AppDispatch
         try {
             $apiResponse = $this->platform->get($uri);
         } catch (ApiException $e) {
-            $message = $e->getMessage() . ' (from backend) at URL ' . $e->apiResponse()->request()->getUri()->__toString();
-            $r = "Error: Retrieving Fax:\n" . $message;
+            $message = $e->getMessage() . $e->apiResponse()->request()->getUri()->__toString();
+            $r = "Error: Retrieving Fax:" . $message;
             return $r;
         }
         if ($apiResponse->response()->getHeader('Content-Type')[0] == 'application/pdf') {
-            $ext = 'pdf';
-            $type = 'Fax';
             $doc = 'data:application/pdf;base64, ' . rawurlencode(base64_encode((string)$apiResponse->raw()));
         } elseif ($apiResponse->response()->getHeader('Content-Type')[0] == 'image/tiff') {
-            $ext = 'tif';
-            $type = 'Fax';
             $doc = 'data:image/tiff;base64, ' . rawurlencode(base64_encode((string)$apiResponse->raw()));
         } else {
-            $ext = 'txt';
-            $type = 'text/html';
             $doc = (string)$apiResponse->raw();
         }
         $r = $apiResponse->raw() ? $apiResponse->raw() : "error";
@@ -252,7 +246,7 @@ class RCFaxClient extends AppDispatch
         try {
             $apiResponse = $this->platform->get($uri);
         } catch (ApiException $e) {
-            $message = $e->getMessage() . ' (from backend) at URL ' . $e->apiResponse()->request()->getUri()->__toString();
+            $message = $e->getMessage() . $e->apiResponse()->request()->getUri()->__toString();
             $r = "Error: Retrieving Fax:\n" . $message;
             return $r;
         }
@@ -285,7 +279,7 @@ class RCFaxClient extends AppDispatch
         return $furi;
     }
 
-    public function disposeDoc()
+    public function disposeDoc($content = '')
     {
         $where = $this->getSession('where');
         if (file_exists($where)) {
@@ -399,7 +393,7 @@ class RCFaxClient extends AppDispatch
 
                 $responseMsgs .= "<tr><td>" . $value["pc_eid"] . "</td><td>" . $value["dSentDateTime"] . "</td><td>" . $adate . "</td><td>" . $pinfo . "</td><td>" . $msg . "</td></tr>";
             }
-        } catch (ApiException $e) {
+        } catch (\Exception $e) {
             $message = $e->getMessage();
             return 'Error: ' . $message . PHP_EOL;
         }

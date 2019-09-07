@@ -21,7 +21,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Fax/SMS</title>
+    <title><?php echo xlt('Fax Module'); ?></title>
     <link rel="stylesheet" href="<?php echo $GLOBALS['assets_static_relative']; ?>/dropzone/dist/dropzone.css">
     <?php
     Header::setupHeader(['opener', 'datetime-picker']);
@@ -93,8 +93,8 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
         var wait = '<span id="wait"><?php echo xlt("Fetching Remote") . '..';?><i class="fa fa-cog fa-spin fa-2x"></i></span>';
 
         var sendFax = function (filePath, from = '') {
-            let btnClose = '<?php echo xlt("Cancel"); ?>';
-            let title = '<?php echo xlt("Send To Contact"); ?>';
+            let btnClose = <?php echo xlj("Cancel"); ?>;
+            let title = <?php echo xlj("Send To Contact"); ?>;
             let url = top.webroot_url + '/modules/oeFax/contact.php?isDocuments=false&isQueue=' +
                 encodeURIComponent(from) + '&file=' + filePath; // do not encode filePath
             // leave dialog name param empty so send dialogs can cascade.
@@ -136,9 +136,11 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
         };
 
         // For use with window cascade popup Twilio
-        function viewDocument(e, docuri) {
+        function viewDocument(e = '', docuri) {
             top.restoreSession();
-            e.preventDefault();
+            if(e) {
+                e.preventDefault();
+            }
             let width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ?
                 document.documentElement.clientWidth : screen.width;
             let height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ?
@@ -168,7 +170,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                 let btnClose = <?php echo xlj('Done'); ?>;
                 let url = data;
                 dlgopen(url, '', 'modal-mlg', 500, '', '', {
-                    url: url,
+                    data: url,
                     type: 'iframe',
                     sizeHeight: 'full'
                 });
