@@ -1,0 +1,33 @@
+{
+    "name": "openemr/oe-module-faxsms",
+    "description": "OpenEMR Fax and SMS module",
+    "type": "openemr-module",
+    "license": "GPL-3.0",
+    "authors": [
+        {
+            "name": "Jerry Padgett",
+            "email": "sjpadgett@gmail.com"
+        },
+        {
+            "name": "Stephen Nielson",
+            "email": "stephen@nielson.org"
+        }
+    ],
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {"OpenEMR\\Modules\\oeFax\\Controllers\\": "controllers/"}
+    },
+    "require": {
+        "openemr/oe-module-installer-plugin": "^0.1.0",
+    	"ext-curl": "*",
+    	"ext-json": "*",
+    	"php": "^7.2",
+        "ringcentral/ringcentral-php": "^2.2",
+        "twilio/sdk": "^5.35"
+    },
+    "config": {
+        "replace": {
+            "pubnub/pubnub": "*"
+        }
+   }
+}
