@@ -1,15 +1,16 @@
 <?php
 return array(
-    'username'      => '+13127674699', // your RingCentral account phone number
-    'extension'     =>  '101', // or number
-    'password'      => '!letmein1',
-    'appKey'        => 'HDoUuxiXQ_-Ldvt1-AxCLw',
-    'appSecret'     => '4TI8GrlUTZOiuX8S3I2AJwI115v352Rk6Xqx91wUP7_Q',
-    'server'        => 'https://platform.devtest.ringcentral.com',
+    'username'      => '',
+    'extension'     => '',
+    'password'      => '',
+    'appKey'        => '',
+    'appSecret'     => '',
+    'server'        => '',
     'portal'        => '',
-    'smsNumber'     => '+13127674699',
+    'smsNumber'     => '',
     'production'    => '',
-    'redirect_url'  => 'https://opensourcedemr.us/openemr/modules/oeFax/rcauth.php',
+    'redirect_url'  => '',
     'smsHours'      => "50",
     'smsMessage'    => "A courtesy reminder for ***NAME*** \r\nFor the appointment scheduled on: ***DATE*** At: ***STARTTIME*** Until: ***ENDTIME*** \r\nWith: ***PROVIDER*** Of: ***ORG***\r\nPlease call if unable to attend.",
 );
+
