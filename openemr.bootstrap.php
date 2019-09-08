@@ -43,7 +43,7 @@ function oe_module_faxsms_patient_report_render_action_buttons(Event $event) {
 <input type='hidden' name='fax' value='0'>
 <?php
 }
-$eventDispatcher->addListener(OpenEMR\Events\PatientReport::ACTIONS_RENDER_POST, 'oe_module_faxsms_patient_report_render_action_buttons');
+$eventDispatcher->addListener(OpenEMR\Events\PatientReport\PatientReportEvent::ACTIONS_RENDER_POST, 'oe_module_faxsms_patient_report_render_action_buttons');
 
 function oe_module_faxsms_patient_report_render_javascript_post_load(Event $event) {
 ?>
@@ -81,4 +81,4 @@ function oe_module_faxsms_patient_report_render_javascript_post_load(Event $even
 	$(".genfax").click(function() {getFaxContent();});
 <?php
 }
-$eventDispatcher->addListener(OpenEMR\Events\PatientReport::JAVASCRIPT_READY_POST, 'oe_module_faxsms_patient_report_render_javascript_post_load');
+$eventDispatcher->addListener(OpenEMR\Events\PatientReport\PatientReportEvent::JAVASCRIPT_READY_POST, 'oe_module_faxsms_patient_report_render_javascript_post_load');
