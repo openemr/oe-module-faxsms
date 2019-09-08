@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General public License 3
  */
-namespace Modules\oeFax\Controller;
+namespace OpenEMR\Modules\FaxSMS\Controllers;
 
 use OpenEMR\Common\Crypto\CryptoGen;
 

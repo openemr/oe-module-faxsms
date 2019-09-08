@@ -9,7 +9,7 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 $ignoreAuth = 1;
-require_once($GLOBALS['rootdir'] . "globals.php");
+require_once(__DIR__ . "/../../../../globals.php");
 
 use OpenEMR\Common\Crypto\CryptoGen;
 
@@ -34,6 +34,7 @@ class FaxServer
     {
         $action = $_GET['_FAX'];
         // allow only what we want
+
         if ($action) {
             if (method_exists($this, $action)) {
                 call_user_func(array($this, $action), array());
@@ -101,7 +102,7 @@ class FaxServer
 
     protected function receivedFax()
     {
-        $dispose_uri = $GLOBALS['webroot'] . '/modules/oeFax/faxserver/receiveContent';
+        $dispose_uri = $GLOBALS['webroot'] . '/interface/modules/custom_modules/module-faxsms/faxserver/receiveContent';
         $twimlResponse = new SimpleXMLElement("<Response></Response>");
         $receiveEl = $twimlResponse->addChild('Receive');
         $receiveEl->addAttribute('action', $dispose_uri);

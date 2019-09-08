@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-namespace Modules\oeFax\Controller;
+namespace OpenEMR\Modules\FaxSMS\Controllers;
 
 use DateTime;
 use Exception;
@@ -163,7 +163,7 @@ class TwilioFaxClient extends AppDispatch
 
         $faxfile = $this->uriDir . '/send/' . $basename;
         $callbackUrl = $this->serverUrl . $GLOBALS['webroot'] .
-            '/modules/oeFax/faxserver/faxCallback?site=' . $this->getSession('site_id');
+            '/interface/modules/custom_modules/module-faxsms/faxserver/faxCallback?site=' . $this->getSession('site_id');
 
         try {
             $twilio = new Client($this->appKey, $this->appSecret, $this->sid);

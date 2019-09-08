@@ -9,7 +9,7 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 $ignoreAuth = 1;
-require_once($GLOBALS['rootdir'] . "globals.php");
+require_once(__DIR__ . "/../../../globals.php");
 
 if (empty($_SESSION['url'])) {
     http_response_code(401);

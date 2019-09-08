@@ -1,5 +1,5 @@
 {
-    "name": "openemr/oe-module-faxsms",
+    "name": "openemr/module-faxsms",
     "description": "OpenEMR Fax and SMS module",
     "type": "openemr-module",
     "license": "GPL-3.0",
@@ -15,7 +15,7 @@
     ],
     "minimum-stability": "stable",
     "autoload": {
-        "psr-4": {"OpenEMR\\Modules\\oeFax\\Controllers\\": "controllers/"}
+        "psr-4": {"OpenEMR\\Modules\\FaxSMS\\Controllers\\": "controllers/"}
     },
     "require": {
         "openemr/oe-module-installer-plugin": "^0.1.0",
