@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-namespace OpenEMR\Modules\oeFax\Controller;
+namespace OpenEMR\Modules\FaxSMS\Controllers;
 
 use OpenEMR\Common\Crypto\CryptoGen;
 use RingCentral\SDK\Http\ApiException;

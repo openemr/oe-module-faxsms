@@ -9,6 +9,6 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
-require_once(__DIR__ . "/../controller/FaxServer.php");
+require_once(__DIR__ . "/../controllers/FaxServer.php");
 // init dispatch
 $fax = new FaxServer();

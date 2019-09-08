@@ -1,2 +1,2 @@
-# oe-module-faxsms
+# module-faxsms
 Fax and SMS feature for OpenEMR

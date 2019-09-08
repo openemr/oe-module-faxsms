@@ -8,9 +8,9 @@
  * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-require_once($GLOBALS['rootdir'] . "globals.php");
+require_once(__DIR__ . "/../../../globals.php");
 
-use Modules\oeFax\Controller\AppDispatch;
+use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 use OpenEMR\Core\Header;
 
 $clientApp = AppDispatch::getApiService();
@@ -95,7 +95,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
         var sendFax = function (filePath, from = '') {
             let btnClose = <?php echo xlj("Cancel"); ?>;
             let title = <?php echo xlj("Send To Contact"); ?>;
-            let url = top.webroot_url + '/modules/oeFax/contact.php?isDocuments=false&isQueue=' +
+            let url = top.webroot_url + '/interface/modules/custom_modules/module-faxsms/contact.php?isDocuments=false&isQueue=' +
                 encodeURIComponent(from) + '&file=' + filePath; // do not encode filePath
             // leave dialog name param empty so send dialogs can cascade.
             dlgopen(url, '', 'modal-sm', 550, '', title, { // dialog restores session
@@ -299,7 +299,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                     <span class="icon-bar"></span>
                 </button>
                 <a class="navbar-brand" href="#">
-                    <?php echo "oeFaxSMS ($title)"; ?>
+                    <?php echo "Fax SMS ($title)"; ?>
                 </a>
             </div>
             <div class="collapse navbar-collapse" id="nav-header-collapse">
