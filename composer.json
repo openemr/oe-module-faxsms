@@ -22,8 +22,8 @@
     	"ext-curl": "*",
     	"ext-json": "*",
     	"php": "^7.2",
-        "ringcentral/ringcentral-php": "^2.2",
-        "twilio/sdk": "^5.35"
+        "ringcentral/ringcentral-php": "2.2.3",
+        "twilio/sdk": "5.34.4"
     },
     "config": {
         "replace": {
