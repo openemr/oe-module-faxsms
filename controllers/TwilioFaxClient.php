@@ -163,7 +163,7 @@ class TwilioFaxClient extends AppDispatch
 
         $faxfile = $this->uriDir . '/send/' . $basename;
         $callbackUrl = $this->serverUrl . $GLOBALS['webroot'] .
-            '/interface/modules/custom_modules/module-faxsms/faxserver/faxCallback?site=' . $this->getSession('site_id');
+            '/interface/modules/custom_modules/oe-module-faxsms/faxserver/faxCallback?site=' . $this->getSession('site_id');
 
         try {
             $twilio = new Client($this->appKey, $this->appSecret, $this->sid);
