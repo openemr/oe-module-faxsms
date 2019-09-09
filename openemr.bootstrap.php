@@ -13,7 +13,7 @@ function oe_module_faxsms_add_menu_item(MenuEvent $event) {
     $menuItem->target='mod';
     $menuItem->menu_id='mod0';
     $menuItem->label=xlt("Fax Module");
-    $menuItem->url="/interface/modules/custom_modules/module-faxsms/messageUI.php";
+    $menuItem->url="/interface/modules/custom_modules/oe-module-faxsms/messageUI.php";
     $menuItem->children = [];
 
     foreach ($menu as $item) {
@@ -64,7 +64,7 @@ function oe_module_faxsms_patient_report_render_javascript_post_load(Event $even
 		    document.report_form.fax.value = 0;
 		    let btnClose = <?php echo xlj("Cancel"); ?>;
 		    let title = <?php echo xlj("Send To Contact"); ?>;
-		    let url = top.webroot_url + '/interface/modules/custom_modules/module-faxsms/contact.php?isContent=0&file=' + content;
+		    let url = top.webroot_url + '/interface/modules/custom_modules/oe-module-faxsms/contact.php?isContent=0&file=' + content;
 		    dlgopen(url, '', 'modal-sm', 525, '', title, {
 			buttons: [
 			    {text: btnClose, close: true, style: 'default btn-xs'}

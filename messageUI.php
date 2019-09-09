@@ -95,7 +95,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
         var sendFax = function (filePath, from = '') {
             let btnClose = <?php echo xlj("Cancel"); ?>;
             let title = <?php echo xlj("Send To Contact"); ?>;
-            let url = top.webroot_url + '/interface/modules/custom_modules/module-faxsms/contact.php?isDocuments=false&isQueue=' +
+            let url = top.webroot_url + '/interface/modules/custom_modules/oe-module-faxsms/contact.php?isDocuments=false&isQueue=' +
                 encodeURIComponent(from) + '&file=' + filePath; // do not encode filePath
             // leave dialog name param empty so send dialogs can cascade.
             dlgopen(url, '', 'modal-sm', 550, '', title, { // dialog restores session

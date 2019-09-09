@@ -102,7 +102,7 @@ class FaxServer
 
     protected function receivedFax()
     {
-        $dispose_uri = $GLOBALS['webroot'] . '/interface/modules/custom_modules/module-faxsms/faxserver/receiveContent';
+        $dispose_uri = $GLOBALS['webroot'] . '/interface/modules/custom_modules/oe-module-faxsms/faxserver/receiveContent';
         $twimlResponse = new SimpleXMLElement("<Response></Response>");
         $receiveEl = $twimlResponse->addChild('Receive');
         $receiveEl->addAttribute('action', $dispose_uri);
