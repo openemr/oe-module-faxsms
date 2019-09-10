@@ -29,6 +29,8 @@ function oe_module_faxsms_add_menu_item(MenuEvent $event)
     $menuItem->label=xlt("Fax Module");
     $menuItem->url="/interface/modules/custom_modules/oe-module-faxsms/messageUI.php";
     $menuItem->children = [];
+    $menuItem->acl_req = ["patients","docs"];
+    $menuItem->global_req = ["oefax_enable"];
 
     foreach ($menu as $item) {
         if ($item->menu_id == 'modimg') {

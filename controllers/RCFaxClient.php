@@ -33,7 +33,7 @@ class RCFaxClient extends AppDispatch
     {
         $this->crypto = new CryptoGen();
         $this->baseDir = $GLOBALS['OE_SITE_DIR'] . DIRECTORY_SEPARATOR . "messageStore";
-        $this->uriDir = $GLOBALS['OE_SITE_WEBROOT'] . "/messageStore";
+        $this->uriDir = $GLOBALS['OE_SITE_WEBROOT'] . "/message_store";
         $this->cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
         $this->credentials = $this->getCredentials();
         $this->portalUrl = !$this->credentials['production'] ? "https://service.devtest.ringcentral.com/" : "https://service.ringcentral.com/";
