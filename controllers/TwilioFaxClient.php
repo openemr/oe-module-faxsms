@@ -8,6 +8,7 @@
  * @copyright Copyright (c) 2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
 namespace OpenEMR\Modules\FaxSMS\Controllers;
 
 use DateTime;
@@ -30,8 +31,8 @@ class TwilioFaxClient extends AppDispatch
     public function __construct()
     {
         $this->crypto = new CryptoGen();
-        $this->baseDir = $GLOBALS['OE_SITE_DIR'] . "/message_store";
-        $this->uriDir = $GLOBALS['OE_SITE_WEBROOT'] . "/message_store";
+        $this->baseDir = $GLOBALS['temporary_files_dir'];
+        $this->uriDir = $GLOBALS['OE_SITE_WEBROOT'];
         $this->cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
         $this->credentials = $this->getCredentials();
         parent::__construct();
@@ -161,7 +162,11 @@ class TwilioFaxClient extends AppDispatch
             file_put_contents($tmpPath, $content);
         }
 
-        $faxfile = $this->uriDir . '/send/' . $basename;
+        // api rest call to fax server to verify twilio request signature and stream file
+        $faxfile = $this->serverUrl . $GLOBALS['webroot'] .
+            '/interface/modules/custom_modules/oe-module-faxsms/faxserver/serveFax?site=' . $this->getSession('site_id') .
+            '&file=' . attr($basename);
+        // callback on completion of fax send
         $callbackUrl = $this->serverUrl . $GLOBALS['webroot'] .
             '/interface/modules/custom_modules/oe-module-faxsms/faxserver/faxCallback?site=' . $this->getSession('site_id');
 

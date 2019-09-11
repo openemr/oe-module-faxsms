@@ -32,8 +32,8 @@ class RCFaxClient extends AppDispatch
     public function __construct()
     {
         $this->crypto = new CryptoGen();
-        $this->baseDir = $GLOBALS['OE_SITE_DIR'] . DIRECTORY_SEPARATOR . "messageStore";
-        $this->uriDir = $GLOBALS['OE_SITE_WEBROOT'] . "/message_store";
+        $this->baseDir = $GLOBALS['temporary_files_dir'];
+        $this->uriDir = $GLOBALS['OE_SITE_WEBROOT'];
         $this->cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
         $this->credentials = $this->getCredentials();
         $this->portalUrl = !$this->credentials['production'] ? "https://service.devtest.ringcentral.com/" : "https://service.ringcentral.com/";
@@ -274,9 +274,9 @@ class RCFaxClient extends AppDispatch
             $this->setSession('where', $fname);
             return $fname;
         }
-        $furi = "$this->uriDir/${type}_${docid}.${ext}";
+        $furi = "$this->baseDir/${type}_${docid}.${ext}";
 
-        return $furi;
+        return $doc;
     }
 
     public function disposeDoc($content = '')
@@ -479,7 +479,7 @@ class RCFaxClient extends AppDispatch
         try {
             // Writing the call-log response to json file
             $dir = 'fax';
-            $messageStoreDir = $this->baseDir; // . DIRECTORY_SEPARATOR . $dir;
+            $messageStoreDir = $this->baseDir;
 
             //Create the Directory
             if (!file_exists($messageStoreDir)) {
@@ -543,7 +543,7 @@ class RCFaxClient extends AppDispatch
         };
         try {
             // Writing the call-log response to json file
-            $messageStoreDir = $this->baseDir; // . DIRECTORY_SEPARATOR . $dir;
+            $messageStoreDir = $this->baseDir;
 
             //Create the Directory
             if (!file_exists($messageStoreDir)) {
