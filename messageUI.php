@@ -10,8 +10,8 @@
  */
 require_once(__DIR__ . "/../../../globals.php");
 
-use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 use OpenEMR\Core\Header;
+use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 
 $clientApp = AppDispatch::getApiService();
 $logged_in = $clientApp->authenticate();
@@ -138,7 +138,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
         // For use with window cascade popup Twilio
         function viewDocument(e = '', docuri) {
             top.restoreSession();
-            if(e) {
+            if (e) {
                 e.preventDefault();
             }
             let width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ?
@@ -167,13 +167,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                     location.href = "disposeDoc";
                     return false;
                 }
-                let btnClose = <?php echo xlj('Done'); ?>;
-                let url = data;
-                dlgopen(url, '', 'modal-mlg', 500, '', '', {
-                    data: url,
-                    type: 'iframe',
-                    sizeHeight: 'full'
-                });
+                viewDocument('', data);
             });
         }
 
@@ -218,7 +212,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                 // get call logs
                 getLogs();
             }).fail(function (xhr, status, error) {
-                alertMsg(<?php echo xlj('Not Authenticated. Restart from Miscellaneous menu or ensure credentials are setup from Activity menu.') ?>, 5000)
+                alertMsg(<?php echo xlj('Not Authenticated. Restart from Modules menu or ensure credentials are setup from Activity menu.') ?>, 5000)
             }).always(function () {
                 $("#wait").remove();
             });

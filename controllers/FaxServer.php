@@ -21,7 +21,7 @@ class FaxServer
 
     public function __construct()
     {
-        $this->baseDir = $GLOBALS['OE_SITE_DIR'] . DIRECTORY_SEPARATOR . "messageStore";
+        $this->baseDir = $GLOBALS['temporary_files_dir'];
         $this->cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
         $this->serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
         $this->crypto = new CryptoGen();
@@ -33,7 +33,6 @@ class FaxServer
     private function dispatchActions()
     {
         $action = $_GET['_FAX'];
-        // allow only what we want
 
         if ($action) {
             if (method_exists($this, $action)) {
@@ -45,6 +44,37 @@ class FaxServer
             http_response_code(401);
         }
 
+        exit;
+    }
+
+    private function serveFax()
+    {
+        $file = $_GET['file'];
+        $FAX_FILE = $this->baseDir . '/send/' . $file;
+        header("Pragma: public");
+        header("Expires: 0");
+        header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
+        header("Content-Type: application/pdf");
+        header("Content-Length: " . filesize($FAX_FILE));
+        header("Content-Disposition: attachment; filename=" . basename($FAX_FILE));
+        header("Content-Description: File Transfer");
+
+        if (is_file($FAX_FILE)) {
+            $chunkSize = 1024 * 1024;
+            $handle = fopen($FAX_FILE, 'rb');
+            while (!feof($handle)) {
+                $buffer = fread($handle, $chunkSize);
+                echo $buffer;
+                ob_flush();
+                flush();
+            }
+            fclose($handle);
+        } else {
+            error_log(errorLogEscape("Serve File Not Found " . $FAX_FILE));
+            http_response_code(404);
+            exit;
+        }
+        unlink($FAX_FILE);
         exit;
     }
 
@@ -62,8 +92,8 @@ class FaxServer
         return;
     }
 
-    // verify actually from twilio
-    private function verify()
+    // verify request signature from twilio
+    private function verify($file = null)
     {
         $url = $this->serverUrl . $_SERVER['REQUEST_URI'];
         $me = $this->computeSignature($url, $_POST);
@@ -84,7 +114,7 @@ class FaxServer
         foreach ($data as $key => $value) {
             $url = $url . $key . $value;
         }
-        // calculates the HMAC hash of the data with the key
+        // calculates the HMAC hash of the data with the key of authToken
         $hmac = hash_hmac("sha1", $url, $this->authToken, true);
         return base64_encode($hmac);
     }
@@ -97,7 +127,7 @@ class FaxServer
         // they own it now so throw away.
         unlink($file);
         http_response_code(200);
-        exit();
+        exit;
     }
 
     protected function receivedFax()
@@ -118,6 +148,6 @@ class FaxServer
         header('Content-type: text/xml');
         http_response_code(200);
         echo '';
-        exit();
+        exit;
     }
 }

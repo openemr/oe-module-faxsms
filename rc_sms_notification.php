@@ -27,7 +27,7 @@ if ($argc > 1 && empty($_SESSION['site_id']) && empty($_GET['site'])) {
     $_GET['site'] = isset($args[1]) ? $args[1] : 'default';
 }
 
-require_once("../../interface/globals.php");
+require_once(__DIR__ . "/../../../globals.php");
 require_once("$srcdir/appointments.inc.php");
 
 $clientApp = AppDispatch::getApiService();
