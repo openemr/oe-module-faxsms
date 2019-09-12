@@ -12,9 +12,11 @@
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 
+use OpenEMR\Events\Globals\GlobalsInitializedEvent;
 use OpenEMR\Events\PatientDocuments\PatientDocumentEvent;
 use OpenEMR\Events\PatientReport\PatientReportEvent;
 use OpenEMR\Menu\MenuEvent;
+use OpenEMR\Services\Globals\GlobalSetting;
 use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -22,7 +24,7 @@ function oe_module_faxsms_add_menu_item(MenuEvent $event)
 {
     $menu = $event->getMenu();
 
-    $menuItem = new \stdClass();
+    $menuItem = new stdClass();
     $menuItem->requirement = 0;
     $menuItem->target = 'mod';
     $menuItem->menu_id = 'mod0';
@@ -119,3 +121,15 @@ function oe_module_faxsms_document_render_javascript_fax_dialog(Event $event)
 }
 
 $eventDispatcher->addListener(PatientDocumentEvent::JAVASCRIPT_READY_FAX_DIALOG, 'oe_module_faxsms_document_render_javascript_fax_dialog');
+
+function createFaxModuleGlobals(GlobalsInitializedEvent $event)
+{
+    $select_array = array(0 => xl('Disabled'), 1 => xl('RingCentral'), 2 => xl('Twilio'));
+    $instruct = xl('Enable Fax SMS Support. Remember to setup credentials.');
+
+    $event->getGlobalsService()->createSection("Modules", "Report");
+    $setting = new GlobalSetting(xl('Enable Fax SMS Module'), $select_array, 2, $instruct);
+    $event->getGlobalsService()->appendToSection("Modules", "oefax_enable", $setting);
+}
+
+$eventDispatcher->addListener(GlobalsInitializedEvent::EVENT_HANDLE, 'createFaxModuleGlobals');
