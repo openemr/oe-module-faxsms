@@ -14,7 +14,19 @@
         }
     ],
     "scripts": {
-        "pre-install-cmd": "OpenEMR\\Composer\\ModuleVerifyVersions::preInstall"
+        "pre-install-cmd": "OpenEMR\\Module\\ModuleInstallActions::beforeInstall",
+        "pre-update-cmd": "OpenEMR\\Module\\ModuleInstallActions::beforeUpdate"
+    },
+    "extra": {
+        "openemr": {
+            "minRequiredVersion": "5.0.2",
+            "maxRequiredVersion": "5.0.2"
+        }
+    },
+    "config": {
+        "replace": {
+            "pubnub/pubnub": "*"
+        }
     },
     "minimum-stability": "stable",
     "autoload": {
@@ -27,10 +39,5 @@
     	"php": "^7.1",
         "ringcentral/ringcentral-php": "2.2.3",
         "twilio/sdk": "5.34.4"
-    },
-    "config": {
-        "replace": {
-            "pubnub/pubnub": "*"
-        }
-   }
+    }
 }
