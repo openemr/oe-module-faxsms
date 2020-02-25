@@ -13,6 +13,9 @@
             "email": "stephen@nielson.org"
         }
     ],
+    "scripts": {
+        "pre-install-cmd": "OpenEMR\\Composer\\ModuleVerifyVersions::preInstall"
+    },
     "minimum-stability": "stable",
     "autoload": {
         "psr-4": {"OpenEMR\\Modules\\FaxSMS\\Controllers\\": "controllers/"}
