@@ -13,21 +13,6 @@
             "email": "stephen@nielson.org"
         }
     ],
-    "scripts": {
-        "pre-install-cmd": "OpenEMR\\Module\\ModuleInstallActions::beforeInstall",
-        "pre-update-cmd": "OpenEMR\\Module\\ModuleInstallActions::beforeUpdate"
-    },
-    "extra": {
-        "openemr": {
-            "minRequiredVersion": "5.0.2",
-            "maxRequiredVersion": "5.0.2"
-        }
-    },
-    "config": {
-        "replace": {
-            "pubnub/pubnub": "*"
-        }
-    },
     "minimum-stability": "stable",
     "autoload": {
         "psr-4": {"OpenEMR\\Modules\\FaxSMS\\Controllers\\": "controllers/"}
@@ -39,5 +24,13 @@
     	"php": "^7.1",
         "ringcentral/ringcentral-php": "2.2.3",
         "twilio/sdk": "5.34.4"
+    },
+    "config": {
+        "replace": {
+            "pubnub/pubnub": "*"
+        }
+   },
+    "conflict": {
+        "openemr/openemr": "5.0.2"
     }
 }
