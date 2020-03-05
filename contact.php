@@ -5,7 +5,7 @@
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2018-2020 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 require_once(__DIR__ . "/../../../globals.php");
@@ -21,6 +21,7 @@ $isContent = $clientApp->getRequest('isContent');
 $isDoc = $clientApp->getRequest('isDocuments');
 $isQueue = $clientApp->getRequest('isQueue');
 $file_name = pathinfo($the_file, PATHINFO_BASENAME);
+$service = $clientApp::getServiceType();
 ?>
 <!DOCTYPE html>
 <html>
@@ -140,12 +141,14 @@ $file_name = pathinfo($the_file, PATHINFO_BASENAME);
                         <input id="form_phone" type="tel" name="phone" class="form-control" required="required">
                         <div class="help-block with-errors"></div>
                     </div>
-                    <div class="form-group">
-                        <label for="form_message"><?php echo xlt('Message') ?></label>
-                        <textarea id="form_message" name="comments" class="form-control" placeholder="
-                            <?php echo xla('Comment for cover sheet') ?>" rows="4"></textarea>
-                        <div class="help-block with-errors"></div>
-                    </div>
+                    <?php if ($service != "2") { ?>
+                        <div class="form-group">
+                            <label for="form_message"><?php echo xlt('Message') ?></label>
+                            <textarea id="form_message" name="comments" class="form-control" placeholder="
+                            <?php echo xla('Comment for cover sheet.') ?>" rows="3"></textarea>
+                            <div class="help-block with-errors"></div>
+                        </div>
+                    <?php } ?>
                     <div>
                         <span class="text-center"><strong><?php echo xlt('Sending File') . ': ' ?></strong><?php echo text($file_name) ?></span>
                     </div>

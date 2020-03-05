@@ -5,7 +5,7 @@
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2018-2020 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
 require_once(__DIR__ . "/../../../globals.php");
@@ -88,6 +88,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             }
             // populate
             retrieveMsgs();
+            $('#received').tab('show');
         });
 
         var wait = '<span id="wait"><?php echo xlt("Fetching Remote") . '..';?><i class="fa fa-cog fa-spin fa-2x"></i></span>';
@@ -98,7 +99,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             let url = top.webroot_url + '/interface/modules/custom_modules/oe-module-faxsms/contact.php?isDocuments=false&isQueue=' +
                 encodeURIComponent(from) + '&file=' + filePath; // do not encode filePath
             // leave dialog name param empty so send dialogs can cascade.
-            dlgopen(url, '', 'modal-sm', 550, '', title, { // dialog restores session
+            dlgopen(url, '', 'modal-md', 250, '', title, { // dialog restores session
                 buttons: [
                     {text: btnClose, close: true, style: 'default btn-sm'}
                 ]
@@ -126,12 +127,11 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             top.restoreSession();
             e.preventDefault();
             let msg = <?php echo xlj('Credentials and SMS Notifications') ?>;
-            dlgopen('', 'setup', 'modal-md', 700, '', msg, {
+            dlgopen('', 'setup', 'modal-md', 500, '', msg, {
                 buttons: [
                     {text: 'Cancel', close: true, style: 'default  btn-sm'}
                 ],
-                url: 'setup.php',
-                sizeHeight: 'full'
+                url: 'setup.php'
             });
         };
 
@@ -182,7 +182,6 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             let datefrom = $('#fromdate').val();
             let dateto = $('#todate').val();
             let data = [];
-
             $("#brand").append(wait);
             $("#rcvdetails tbody").empty();
             $("#sentdetails tbody").empty();
@@ -279,23 +278,16 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
         }
 
     </script>
-    <style>
-    </style>
 </head>
 <body>
-    <nav class="navbar navbar-default navbar-fixed-top">
+    <nav class="navbar navbar-expand-md navbar-light bg-light py-4 mb-2">
         <div class="container">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#nav-header-collapse">
-                    <span class="sr-only"><?php echo xlt('Toggle'); ?></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="#">
-                    <?php echo "Fax SMS ($title)"; ?>
-                </a>
-            </div>
+            <a class="navbar-brand" href="#">
+                <?php echo "Fax SMS ($title)"; ?>
+            </a>
+            <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#nav-header-collapse">
+                <span class="navbar-toggler-icon"></span>
+            </button>
             <div class="collapse navbar-collapse" id="nav-header-collapse">
                 <form class="navbar-form navbar-left form-inline" method="GET" role="search">
                     <div class="form-group">
@@ -308,175 +300,170 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                     </div>
                     <div class="form-group">
                         <button type="button" class="btn btn-default" onclick="retrieveMsgs(event,this)" title="<?php echo xla('Click to get current history.') ?>">
-                            <i class="glyphicon glyphicon-refresh"></i></button>
+                            <i class="fa fa-refresh"></i></button>
                         <span id="brand"></span>
                     </div>
                 </form>
-                <ul class="nav navbar-nav navbar-right">
-                    <li class="dropdown ">
-                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                <div class="navbar-nav ml-auto">
+                    <div class="nav-item dropdown ">
+                        <a href="#" class="nav-item dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
                             <?php echo xlt('Actions'); ?>
                             <span class="caret"></span></a>
-                        <ul class="dropdown-menu" role="menu">
-                            <li class=""><a href="#" onclick="doSetup(event)"><?php echo xlt('Account Credentials'); ?></a></li>
-                            <li class=""><a href="#" onclick="popNotify('', './rc_sms_notification.php?dryrun=1&site=<?php echo $_SESSION['site_id'] ?>')"><?php echo xlt('Test SMS Reminders'); ?></a></li>
-                            <li class=""><a href="#" onclick="popNotify('live', './rc_sms_notification.php?site=<?php echo $_SESSION['site_id'] ?>')"><?php echo xlt('Send SMS Reminders'); ?></a></li>
-                            <li class="ringcentral"><a href="#" onclick="docInfo(event, portalUrl)"><?php echo xlt('Portal Gateway'); ?></a></li>
-                        </ul>
-                    </li>
-                    <li class="ringcentral">
-                        <a class="ringcentral" href="#" onclick="docInfo(event, portalUrl)"><?php echo xlt('Visit Account Portal'); ?></a>
-                    </li>
-                </ul>
+                        <div class="dropdown-menu" role="menu">
+                            <a class="dropdown-item" href="#" onclick="doSetup(event)"><?php echo xlt('Account Credentials'); ?></a>
+                            <a class="dropdown-item" href="#" onclick="popNotify('', './rc_sms_notification.php?dryrun=1&site=<?php echo $_SESSION['site_id'] ?>')"><?php echo xlt('Test SMS Reminders'); ?></a>
+                            <a class="dropdown-item" href="#" onclick="popNotify('live', './rc_sms_notification.php?site=<?php echo $_SESSION['site_id'] ?>')"><?php echo xlt('Send SMS Reminders'); ?></a>
+                            <a class="dropdown-item ringcentral" href="#" onclick="docInfo(event, portalUrl)"><?php echo xlt('Portal Gateway'); ?></a>
+                        </div>
+                    </div>
+                    <a class="nav-item ringcentral" href="#" onclick="docInfo(event, portalUrl)"><?php echo xlt('Visit Account Portal'); ?></a>
+                </div>
             </div><!-- /.navbar-collapse -->
         </div><!-- /.container-fluid -->
     </nav>
-    <div class="container-fluid main-container" style="margin-top:50px">
-        <div class="col-md-10 col-md-offset-1 content">
-            <h3><?php echo xlt("Activities") ?></h3>
-            <div id="dashboard" class="panel">
-                <!-- Nav tabs -->
-                <ul id="tab-menu" class="nav nav-tabs" role="tablist">
-                    <li role="presentation"><a href="#received" aria-controls="received" role="tab" data-toggle="tab"><?php echo xlt("Received") ?></a></li>
-                    <li role="presentation"><a href="#sent" aria-controls="sent" role="tab" data-toggle="tab"><?php echo xlt("Sent") ?></a></li>
-                    <li class="ringcentral" role="presentation"><a href="#messages" aria-controls="messages" role="tab" data-toggle="tab"><?php echo xlt("SMS Log") ?></a></li>
-                    <li class="ringcentral" role="presentation"><a href="#logs" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Call Log") ?></a></li>
-                    <li role="presentation">
-                        <a href="#alertlogs" aria-controls="alertlogs" role="tab" data-toggle="tab"><?php echo xlt("Notifications Log") ?>&nbsp;&nbsp;
-                            <span class="glyphicon glyphicon-refresh" onclick="getNotificationLog(event,this)"
-                                title="<?php echo xla('Click to refresh using current date range. Refreshing just this tab.') ?>"></span></a>
-                    </li>
-                    <li class="active" role="presentation"><a href="#upLoad" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Upload Fax") ?></a></li>
-                </ul>
-                <!-- Tab panes -->
-                <div class="tab-content">
-                    <div role="tabpanel" class="tab-pane fade" id="received">
-                        <div class="table-responsive">
-                            <table class="table table-condensed table-striped" id="rcvdetails">
-                                <thead>
-                                <tr>
-                                    <th><?php echo xlt("Date") ?></th>
-                                    <th class="ringcentral"><?php echo xlt("Type") ?></th>
-                                    <th><?php echo xlt("Pages") ?></th>
-                                    <th><?php echo xlt("From") ?></th>
-                                    <th><?php echo xlt("To") ?></th>
-                                    <th><?php echo xlt("Result") ?></th>
-                                    <th class="ringcentral"><?php echo xlt("Download") ?></th>
-                                    <th><?php echo xlt("View") ?></th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td><?php echo xlt("No Items Try Refresh") ?></td>
-                                </tr>
-                                </tbody>
-                            </table>
+    <div class="container-fluid main-container mt-3">
+        <div class="row">
+            <div class="col-md-10 offset-md-1 content">
+                <h3><?php echo xlt("Activities") ?></h3>
+                <div id="dashboard" class="card">
+                    <!-- Nav tabs -->
+                    <ul id="tab-menu" class="nav nav-pills" role="tablist">
+                        <li class="nav-item" role="presentation"><a class="nav-link active" href="#received" aria-controls="received" role="tab" data-toggle="tab"><?php echo xlt("Received") ?></a></li>
+                        <li class="nav-item" role="presentation"><a class="nav-link" href="#sent" aria-controls="sent" role="tab" data-toggle="tab"><?php echo xlt("Sent") ?></a></li>
+                        <li class="nav-item ringcentral" role="presentation"><a class="nav-link" href="#messages" aria-controls="messages" role="tab" data-toggle="tab"><?php echo xlt("SMS Log") ?></a></li>
+                        <li class="nav-item ringcentral" role="presentation"><a class="nav-link" href="#logs" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Call Log") ?></a></li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" href="#alertlogs" aria-controls="alertlogs" role="tab" data-toggle="tab"><?php echo xlt("Notifications Log") ?>&nbsp;&nbsp;
+                                <span class="glyphicon glyphicon-refresh" onclick="getNotificationLog(event,this)"
+                                    title="<?php echo xla('Click to refresh using current date range. Refreshing just this tab.') ?>"></span></a>
+                        </li>
+                        <li class="nav-item" role="presentation"><a class="nav-link" href="#upLoad" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Upload Fax") ?></a></li>
+                    </ul>
+                    <!-- Tab panes -->
+                    <div class="tab-content">
+                        <div role="tabpanel" class="container-fluid tab-pane fade" id="received">
+                            <div class="table-responsive">
+                                <table class="table table-condensed table-striped" id="rcvdetails">
+                                    <thead>
+                                    <tr>
+                                        <th><?php echo xlt("Date") ?></th>
+                                        <th class="ringcentral"><?php echo xlt("Type") ?></th>
+                                        <th><?php echo xlt("Pages") ?></th>
+                                        <th><?php echo xlt("From") ?></th>
+                                        <th><?php echo xlt("To") ?></th>
+                                        <th><?php echo xlt("Result") ?></th>
+                                        <th class="ringcentral"><?php echo xlt("Download") ?></th>
+                                        <th><?php echo xlt("View") ?></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td><?php echo xlt("No Items Try Refresh") ?></td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                    <div role="tabpanel" class="tab-pane fade" id="sent">
-                        <div class="table-responsive">
-                            <table class="table table-condensed table-striped" id="sentdetails">
-                                <thead>
-                                <tr>
-                                    <th><?php echo xlt("Date") ?></th>
-                                    <th class="ringcentral"><?php echo xlt("Type") ?></th>
-                                    <th><?php echo xlt("Pages") ?></th>
-                                    <th><?php echo xlt("From") ?></th>
-                                    <th><?php echo xlt("To") ?></th>
-                                    <th><?php echo xlt("Result") ?></th>
-                                    <th class="ringcentral"><?php echo xlt("Download") ?></th>
-                                    <th><?php echo xlt("View") ?></th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td><?php echo xlt("No Items Try Refresh") ?></td>
-                                </tr>
-                                </tbody>
-                            </table>
+                        <div role="tabpanel" class="container-fluid tab-pane fade" id="sent">
+                            <div class="table-responsive">
+                                <table class="table table-condensed table-striped" id="sentdetails">
+                                    <thead>
+                                    <tr>
+                                        <th><?php echo xlt("Date") ?></th>
+                                        <th class="ringcentral"><?php echo xlt("Type") ?></th>
+                                        <th><?php echo xlt("Pages") ?></th>
+                                        <th><?php echo xlt("From") ?></th>
+                                        <th><?php echo xlt("To") ?></th>
+                                        <th><?php echo xlt("Result") ?></th>
+                                        <th class="ringcentral"><?php echo xlt("Download") ?></th>
+                                        <th><?php echo xlt("View") ?></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td><?php echo xlt("No Items Try Refresh") ?></td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                    <div role="tabpanel" class="tab-pane fade" id="messages">
-                        <div class="table-responsive">
-                            <table class="table table-condensed table-striped" id="msgdetails">
-                                <thead>
-                                <tr>
-                                    <th><?php echo xlt("Date") ?></th>
-                                    <th><?php echo xlt("Type") ?></th>
-                                    <th><?php echo xlt("From") ?></th>
-                                    <th><?php echo xlt("To") ?></th>
-                                    <th><?php echo xlt("Result") ?></th>
-                                    <th><?php echo xlt("Download") ?></th>
-                                    <th><?php echo xlt("View") ?></th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td><?php echo xlt("No Items Try Refresh") ?></td>
-                                </tr>
-                                </tbody>
-                            </table>
+                        <div role="tabpanel" class="container-fluid tab-pane fade" id="messages">
+                            <div class="table-responsive">
+                                <table class="table table-condensed table-striped" id="msgdetails">
+                                    <thead>
+                                    <tr>
+                                        <th><?php echo xlt("Date") ?></th>
+                                        <th><?php echo xlt("Type") ?></th>
+                                        <th><?php echo xlt("From") ?></th>
+                                        <th><?php echo xlt("To") ?></th>
+                                        <th><?php echo xlt("Result") ?></th>
+                                        <th><?php echo xlt("Download") ?></th>
+                                        <th><?php echo xlt("View") ?></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td><?php echo xlt("No Items Try Refresh") ?></td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                    <div role="tabpanel" class="tab-pane fade" id="logs">
-                        <div class="table-responsive">
-                            <table class="table table-condensed table-striped" id="logdetails">
-                                <thead>
-                                <tr>
-                                    <th><?php echo xlt("Date") ?></th>
-                                    <th><?php echo xlt("Type") ?></th>
-                                    <th><?php echo xlt("From") ?></th>
-                                    <th><?php echo xlt("To") ?></th>
-                                    <th><?php echo xlt("Action") ?></th>
-                                    <th><?php echo xlt("Result") ?></th>
-                                    <th><?php echo xlt("Id") ?></th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td><?php echo xlt("No Items Try Refresh") ?></td>
-                                </tr>
-                                </tbody>
-                            </table>
+                        <div role="tabpanel" class="container-fluid tab-pane fade" id="logs">
+                            <div class="table-responsive">
+                                <table class="table table-condensed table-striped" id="logdetails">
+                                    <thead>
+                                    <tr>
+                                        <th><?php echo xlt("Date") ?></th>
+                                        <th><?php echo xlt("Type") ?></th>
+                                        <th><?php echo xlt("From") ?></th>
+                                        <th><?php echo xlt("To") ?></th>
+                                        <th><?php echo xlt("Action") ?></th>
+                                        <th><?php echo xlt("Result") ?></th>
+                                        <th><?php echo xlt("Id") ?></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td><?php echo xlt("No Items Try Refresh") ?></td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                    <div role="tabpanel" class="tab-pane fade" id="alertlogs">
-                        <div class="table-responsive">
-                            <table class="table table-condensed table-striped" id="alertdetails">
-                                <thead>
-                                <tr>
-                                    <th><?php echo xlt("Id") ?></th>
-                                    <th><?php echo xlt("Date Sent") ?></th>
-                                    <th><?php echo xlt("Appt Date Time") ?></th>
-                                    <th><?php echo xlt("Patient") ?></th>
-                                    <th><?php echo xlt("Message") ?></th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <tr>
-                                    <td><?php echo xlt("No Items") ?></td>
-                                </tr>
-                                </tbody>
-                            </table>
+                        <div role="tabpanel" class="container-fluid tab-pane fade" id="alertlogs">
+                            <div class="table-responsive">
+                                <table class="table table-condensed table-striped" id="alertdetails">
+                                    <thead>
+                                    <tr>
+                                        <th><?php echo xlt("Id") ?></th>
+                                        <th><?php echo xlt("Date Sent") ?></th>
+                                        <th><?php echo xlt("Appt Date Time") ?></th>
+                                        <th><?php echo xlt("Patient") ?></th>
+                                        <th><?php echo xlt("Message") ?></th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr>
+                                        <td><?php echo xlt("No Items") ?></td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
-                    <div role="tabpanel" class="tab-pane fade in active" id="upLoad">
-                        <div class="panel container-fluid">
-                            <div id="fax-queue-container">
-                                <div id="fax-queue">
-                                    <form id="faxQueue" method="post" enctype="multipart/form-data" class="dropzone"></form>
+                        <div role="tabpanel" class="container-fluid tab-pane fade in active" id="upLoad">
+                            <div class="panel container-fluid">
+                                <div id="fax-queue-container">
+                                    <div id="fax-queue">
+                                        <form id="faxQueue" method="post" enctype="multipart/form-data" class="dropzone"></form>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!--</div>-->
-                <footer class="pull-left footer">
-                    <p class="col-md-12">
-                    <hr class="divider">
-                    </p>
-                </footer>
             </div>
-
+        </div>
+    </div>
 </body>
 </html>
