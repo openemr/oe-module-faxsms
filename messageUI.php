@@ -85,6 +85,8 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             $("#todate").val(new Date().toJSON().slice(0, 10));
             if (Service === '2') {
                 $(".ringcentral").hide();
+            } else {
+                $(".twilio").hide();
             }
             // populate
             retrieveMsgs();
@@ -155,14 +157,14 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             e.preventDefault();
             let wait = '<span id="wait"><?php echo xlt("Fetching Document") . '..';?><i class="fa fa-cog fa-spin fa-2x"></i></span>';
             let actionUrl = 'viewFax';
-            $("#brand").append(wait);
+            $("#brand").addClass('fa-spin');
             return $.post(actionUrl, {
                 'docuri': docuri,
                 'docid': docid,
                 'pid': pid,
                 'download': downFlag
             }).done(function (data) {
-                $("#wait").remove();
+                $("#brand").removeClass('fa-spin');
                 if (downFlag === 'true') {
                     location.href = "disposeDoc";
                     return false;
@@ -182,7 +184,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             let datefrom = $('#fromdate').val();
             let dateto = $('#todate').val();
             let data = [];
-            $("#brand").append(wait);
+            $("#brand").addClass('fa-spin');
             $("#rcvdetails tbody").empty();
             $("#sentdetails tbody").empty();
             $("#msgdetails tbody").empty();
@@ -194,14 +196,8 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                 }, function () {
                 }, 'json').done(function (data) {
                 if (data.error) {
-                    $("#wait").remove();
-                    var err = (data.error.search(/Exception/) !== -1 ? 1 : 0);
-                    if (!err) {
-                        err = (data.error.search(/Error:/) !== -1 ? 1 : 0);
-                    }
-                    if (err) {
-                        alertMsg(data.error);
-                    }
+                    $("#brand").removeClass('fa-spin');
+                    alertMsg(data.error);
                     return false;
                 }
                 // populate our panels
@@ -213,7 +209,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             }).fail(function (xhr, status, error) {
                 alertMsg(<?php echo xlj('Not Authenticated. Restart from Modules menu or ensure credentials are setup from Activity menu.') ?>, 5000)
             }).always(function () {
-                $("#wait").remove();
+                $("#brand").removeClass('fa-spin');
             });
         }
 
@@ -225,7 +221,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             let datefrom = $('#fromdate').val();
             let dateto = $('#todate').val();
 
-            $("#brand").append(wait);
+            $("#brand").addClass('fa-spin');
             return $.post(actionUrl, {
                 'pid': pid,
                 'datefrom': datefrom,
@@ -243,7 +239,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                 // Get SMS appointments notifications
                 getNotificationLog();
             }).always(function () {
-                $("#wait").remove();
+                $("#brand").removeClass('fa-spin');
             });
         }
 
@@ -254,7 +250,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             let datefrom = $('#fromdate').val() + " 00:00:00";
             let dateto = $('#todate').val() + " 23:59:59";
 
-            $("#brand").append(wait);
+            $("#brand").addClass('fa-spin');
             return $.post(actionUrl, {
                 'pid': pid,
                 'datefrom': datefrom,
@@ -269,7 +265,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                 }
                 $("#alertdetails tbody").empty().append(data);
             }).always(function () {
-                $("#wait").remove();
+                $("#brand").removeClass('fa-spin');
             });
         }
 
@@ -279,48 +275,46 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
 
     </script>
 </head>
-<body>
-    <nav class="navbar navbar-expand-md navbar-light bg-light py-4 mb-2">
+<body class="body_top">
+    <div>
+    <nav class="navbar navbar-expand-xl navbar-light bg-light">
         <div class="container">
             <a class="navbar-brand" href="#">
                 <?php echo "Fax SMS ($title)"; ?>
             </a>
-            <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#nav-header-collapse">
+            <button type="button" class="bg-primary navbar-toggler mr-auto" data-toggle="collapse" data-target="#nav-header-collapse">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="nav-header-collapse">
                 <form class="navbar-form navbar-left form-inline" method="GET" role="search">
                     <div class="form-group">
-                        <label for="formdate"><?php echo xlt('Activities From Date:') ?></label>
+                        <label class="mx-1" for="formdate"><?php echo xlt('Activities From Date') ?>:</label>
                         <input type="text" id="fromdate" name="fromdate" class="form-control input-sm datepicker" placeholder="YYYY-MM-DD" value=''>
                     </div>
                     <div class="form-group">
-                        <label for="todate"><?php echo xlt('To Date:') ?></label>
+                        <label class="mx-1" for="todate"><?php echo xlt('To Date') ?>:</label>
                         <input type="text" id="todate" name="todate" class="form-control input-sm datepicker" placeholder="YYYY-MM-DD" value=''>
                     </div>
                     <div class="form-group">
-                        <button type="button" class="btn btn-default" onclick="retrieveMsgs(event,this)" title="<?php echo xla('Click to get current history.') ?>">
-                            <i class="fa fa-refresh"></i></button>
-                        <span id="brand"></span>
+                        <button type="button" class="btn btn-primary" onclick="retrieveMsgs(event,this)" title="<?php echo xla('Click to get current history.') ?>">
+                            <i class="fa fa-search" id="brand"></i></button>
                     </div>
                 </form>
-                <div class="navbar-nav ml-auto">
-                    <div class="nav-item dropdown ">
-                        <a href="#" class="nav-item dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-                            <?php echo xlt('Actions'); ?>
-                            <span class="caret"></span></a>
-                        <div class="dropdown-menu" role="menu">
-                            <a class="dropdown-item" href="#" onclick="doSetup(event)"><?php echo xlt('Account Credentials'); ?></a>
-                            <a class="dropdown-item" href="#" onclick="popNotify('', './rc_sms_notification.php?dryrun=1&site=<?php echo $_SESSION['site_id'] ?>')"><?php echo xlt('Test SMS Reminders'); ?></a>
-                            <a class="dropdown-item" href="#" onclick="popNotify('live', './rc_sms_notification.php?site=<?php echo $_SESSION['site_id'] ?>')"><?php echo xlt('Send SMS Reminders'); ?></a>
-                            <a class="dropdown-item ringcentral" href="#" onclick="docInfo(event, portalUrl)"><?php echo xlt('Portal Gateway'); ?></a>
-                        </div>
+                <div class="nav-item dropdown ml-auto">
+                    <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                        <?php echo xlt('Actions'); ?><span class="caret"></span>
+                    </button>
+                    <div class="dropdown-menu" role="menu">
+                        <a class="dropdown-item" href="#" onclick="doSetup(event)"><?php echo xlt('Account Credentials'); ?></a>
+                        <a class="dropdown-item" href="#" onclick="popNotify('', './rc_sms_notification.php?dryrun=1&site=<?php echo $_SESSION['site_id'] ?>')"><?php echo xlt('Test SMS Reminders'); ?></a>
+                        <a class="dropdown-item" href="#" onclick="popNotify('live', './rc_sms_notification.php?site=<?php echo $_SESSION['site_id'] ?>')"><?php echo xlt('Send SMS Reminders'); ?></a>
+                        <a class="dropdown-item ringcentral" href="#" onclick="docInfo(event, portalUrl)"><?php echo xlt('Portal Gateway'); ?></a>
                     </div>
-                    <a class="nav-item ringcentral" href="#" onclick="docInfo(event, portalUrl)"><?php echo xlt('Visit Account Portal'); ?></a>
                 </div>
+                <a class="nav-item ringcentral mx-1 mr-auto" href="#" onclick="docInfo(event, portalUrl)"><?php echo xlt('Portal'); ?></a>
             </div><!-- /.navbar-collapse -->
-        </div><!-- /.container-fluid -->
     </nav>
+    </div>
     <div class="container-fluid main-container mt-3">
         <div class="row">
             <div class="col-md-10 offset-md-1 content">
@@ -334,7 +328,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                         <li class="nav-item ringcentral" role="presentation"><a class="nav-link" href="#logs" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Call Log") ?></a></li>
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" href="#alertlogs" aria-controls="alertlogs" role="tab" data-toggle="tab"><?php echo xlt("Notifications Log") ?>&nbsp;&nbsp;
-                                <span class="glyphicon glyphicon-refresh" onclick="getNotificationLog(event,this)"
+                                <span class="fa fa-refresh" onclick="getNotificationLog(event,this)"
                                     title="<?php echo xla('Click to refresh using current date range. Refreshing just this tab.') ?>"></span></a>
                         </li>
                         <li class="nav-item" role="presentation"><a class="nav-link" href="#upLoad" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Upload Fax") ?></a></li>
@@ -346,7 +340,8 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                                 <table class="table table-condensed table-striped" id="rcvdetails">
                                     <thead>
                                     <tr>
-                                        <th><?php echo xlt("Date") ?></th>
+                                        <th><?php echo xlt("Start Time") ?></th>
+                                        <th class="twilio"><?php echo xlt("End Time") ?></th>
                                         <th class="ringcentral"><?php echo xlt("Type") ?></th>
                                         <th><?php echo xlt("Pages") ?></th>
                                         <th><?php echo xlt("From") ?></th>
@@ -369,7 +364,8 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                                 <table class="table table-condensed table-striped" id="sentdetails">
                                     <thead>
                                     <tr>
-                                        <th><?php echo xlt("Date") ?></th>
+                                        <th><?php echo xlt("Start Time") ?></th>
+                                        <th class="twilio"><?php echo xlt("End Time") ?></th>
                                         <th class="ringcentral"><?php echo xlt("Type") ?></th>
                                         <th><?php echo xlt("Pages") ?></th>
                                         <th><?php echo xlt("From") ?></th>
@@ -465,5 +461,6 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             </div>
         </div>
     </div>
+    </div><!-- /.navbar-container -->
 </body>
 </html>

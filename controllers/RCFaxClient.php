@@ -45,18 +45,12 @@ class RCFaxClient extends AppDispatch
     public function getCredentials()
     {
         // is this new user or credentials aren't setup?
-        if (!file_exists($this->cacheDir . '/_credentials.php')) {
-            // create setup json credentials from defaults
+        if (!file_exists($this->cacheDir)) {
+            // must have this path for platform persist. @todo Move to table!
             mkdir($this->cacheDir, 0777, true);
-            $credentials = require(__DIR__ . '/../_credentials.php');
-
-            $content = $this->crypto->encryptStandard(json_encode($credentials));
-            file_put_contents($this->cacheDir . '/_credentials.php', $content);
         }
 
-        $credentials = file_get_contents($this->cacheDir . '/_credentials.php');
-        $credentials = json_decode($this->crypto->decryptStandard($credentials), true);
-
+        $credentials = appDispatch::getSetup();
         return $credentials;
     }
 
@@ -507,8 +501,8 @@ class RCFaxClient extends AppDispatch
                         $from = $messageStore->from->name . " " . $messageStore->from->phoneNumber;
                         $errors = $messageStore->to[0]->faxErrorCode ? "why: " . $messageStore->to[0]->faxErrorCode : $messageStore->from->faxErrorCode;
                         $status = $messageStore->messageStatus . " " . $errors;
-                        $aUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','${id}','true')>" . ${id} . " <span class='glyphicon glyphicon-open'></span></a></br>";
-                        $vUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','${id}','false')> <span class='glyphicon glyphicon-open'></span></a></br>";
+                        $aUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','${id}','true')>" . ${id} . " <span class='fa fa-download'></span></a></br>";
+                        $vUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','${id}','false')> <span class='fa fa-file-pdf-o'></span></a></br>";
 
                         if (strtolower($messageStore->type) === "sms") {
                             $responseMsgs[2] .= "<tr><td>" . str_replace(array("T", "Z"), " ", $messageStore->lastModifiedTime) . "</td><td>" . $messageStore->type . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><td>" . $aUrl . "</td><td>" . $vUrl . "</td></tr>";
@@ -525,8 +519,8 @@ class RCFaxClient extends AppDispatch
             }
         } catch (ApiException $e) {
             $message = $e->getMessage();
-            $responseMsgs[] = "<tr><td>Error: " . $message . " Ensure credentials are correct.</td></tr>";
-            echo json_encode($responseMsgs);
+            $responseMsgs = "<tr><td>" . $message . " : " . xlt('Ensure account credentials are correct.') . "</td></tr>";
+            echo json_encode(array('error' => $responseMsgs));
             exit();
         }
         if (empty($responseMsgs)) {

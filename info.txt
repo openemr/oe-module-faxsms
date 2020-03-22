@@ -1,1 +1,1 @@
-Open EMR Fax Module
+Fax and SMS Module

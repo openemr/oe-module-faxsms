@@ -80,11 +80,21 @@ class FaxServer
 
     private function getCredentials()
     {
-        if (!file_exists($this->cacheDir . '/_credentials_twilio.php')) {
-            http_response_code(404);
-            exit;
+        $this->authUser = 0;
+        $credentials = sqlQuery("SELECT * FROM `module_faxsms_credentials` WHERE `auth_user` = ? AND `vendor` = ?", array($this->authUser, '_twilio'))['credentials'];
+
+        if(empty($credentials)) {
+            // for legacy
+            $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
+            $fn = self::getServiceType() === '1' ? '/_credentials.php' : '/_credentials_twilio.php';
+            $credentials = file_get_contents($cacheDir . $fn);
+            if(empty($credentials)) {
+                error_log(errorLogEscape("Failed get auth: legacy"));
+                http_response_code(401);
+                exit;
+            }
         }
-        $credentials = file_get_contents($this->cacheDir . '/_credentials_twilio.php');
+
         $credentials = json_decode($this->crypto->decryptStandard($credentials), true);
         $this->authToken = $credentials['password'];
         unset($credentials);

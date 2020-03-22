@@ -12,12 +12,18 @@ namespace OpenEMR\Modules\FaxSMS\Controllers;
 
 use OpenEMR\Common\Crypto\CryptoGen;
 
+/**
+ * Class AppDispatch
+ *
+ * @package OpenEMR\Modules\FaxSMS\Controllers
+ */
 abstract class AppDispatch
 {
     private $_request, $_response, $_query, $_post, $_server, $_cookies, $_session;
+    protected $crypto;
     protected $_currentAction, $_defaultModel;
     static $_apiService;
-
+    private $_credentials, $authUser;
     const ACTION_DEFAULT = 'index';
 
     public function __construct()
@@ -28,12 +34,31 @@ abstract class AppDispatch
         $this->_server = &$_SERVER;
         $this->_cookies = &$_COOKIE;
         $this->_session = &$_SESSION;
-
+        $this->_credentials = array(
+            'username' => '',
+            'extension' => '',
+            'password' => '',
+            'appKey' => '',
+            'appSecret' => '',
+            'server' => '',
+            'portal' => '',
+            'smsNumber' => '',
+            'production' => '',
+            'redirect_url' => '',
+            'smsHours' => "50",
+            'smsMessage' => "A courtesy reminder for ***NAME*** \r\nFor the appointment scheduled on: ***DATE*** At: ***STARTTIME*** Until: ***ENDTIME*** \r\nWith: ***PROVIDER*** Of: ***ORG***\r\nPlease call if unable to attend.",
+        );
+        //$this->crypto = new CryptoGen();
+        $this->authUser = $this->getSession('authUser');
         $this->dispatchActions();
         $this->render();
     }
 
-    private function indexAction()
+abstract function faxProcessUploads();
+abstract function sendFax();
+abstract function sendSMS();
+
+private function indexAction()
     {
         return null;
     }
@@ -221,20 +246,51 @@ abstract class AppDispatch
             'smsHours' => $smsHours,
             'smsMessage' => $smsMessage
         );
-        $baseDir = $GLOBALS['OE_SITE_DIR'] . DIRECTORY_SEPARATOR . "messageStore";
-        $this->baseDir = $baseDir;
 
-        $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
-        $fn = self::getServiceType() === '1' ? '/_credentials.php' : '/_credentials_twilio.php';
-        if (!file_exists($cacheDir . $fn)) {
-            mkdir($cacheDir, 0777, true);
-        }
-        $crypto = new CryptoGen();
-        $content = $crypto->encryptStandard(json_encode($setup));
-        file_put_contents($cacheDir . $fn, $content);
+        $vendor = self::getServiceType() === '1' ? '_ringcentral' : '_twilio';
 
+        $content = $this->crypto->encryptStandard(json_encode($setup));
+
+        // for now we'll allow any user to use this service initial setup user credentials
+        // @todo allow setup option to restrict who is allowed to use
+        $this->authUser = 0;
+        $sql = "INSERT INTO `module_faxsms_credentials` (`id`, `auth_user`, `vendor`, `credentials`) VALUES (NULL, ?, ?, ?) ON DUPLICATE KEY UPDATE `auth_user`= ?, `vendor` = ?, `credentials`= ?";
+        sqlStatement($sql, array($this->authUser,$vendor, $content, $this->authUser, $vendor, $content));
         return xlt('Save Success');
     }
+
+    /**
+     * Common credentials storage between services
+     * the service class will set specific credential.
+     *
+     * @return array|mixed
+     */
+    protected function getSetup()
+    {
+
+        $vendor = self::getServiceType() === '1' ? '_ringcentral' : '_twilio';
+        // for now we'll allow all users to use this service
+        // @todo allow setup option to restrict who is allowed to use
+        $this->authUser = 0;
+        $credentials = sqlQuery("SELECT * FROM `module_faxsms_credentials` WHERE `auth_user` = ? AND `vendor` = ?", array($this->authUser, $vendor))['credentials'];
+
+        if(empty($credentials)) {
+            // for legacy
+            $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
+            $fn = self::getServiceType() === '1' ? '/_credentials.php' : '/_credentials_twilio.php';
+            $credentials = file_get_contents($cacheDir . $fn);
+            if(empty($credentials)) {
+                return $this->_credentials;
+            }
+
+            return json_decode($this->crypto->decryptStandard($credentials), true);
+        }
+
+        $credentials = json_decode($this->crypto->decryptStandard($credentials), true);
+
+        return $credentials;
+    }
+
 }
 
 /*interface oeMessagingInterface

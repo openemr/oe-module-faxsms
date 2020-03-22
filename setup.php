@@ -29,6 +29,7 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
         $(function () {
             $('#setup-form').on('submit', function (e) {
                 if (!e.isDefaultPrevented()) {
+                    $(window).scrollTop(0);
                     let wait = '<i class="fa fa-cog fa-spin fa-4x"></i>';
                     let url = 'saveSetup';
                     $.ajax({
@@ -51,7 +52,12 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                                     // empty the form
                                     $('#setup-form')[0].reset();
                                     setTimeout(function () {
-                                        dlgclose();
+                                        $('#setup-form').find('.messages').remove();
+                                        <?php if (!$module_config) { ?>
+                                            dlgclose();
+                                        <?php } else { ?>
+                                            location.reload();
+                                        <?php } ?>
                                     }, 2000);
                                 }
                             }
@@ -65,6 +71,9 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
 </head>
 <body>
     <div class="container-fluid">
+        <?php if ($module_config) { ?>
+            <h4>Setup Credentials</h4>
+        <?php } ?>
         <form class="form" id="setup-form" role="form">
             <div class="messages"></div>
             <div class="row">
