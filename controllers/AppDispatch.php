@@ -254,8 +254,8 @@ private function indexAction()
         // for now we'll allow any user to use this service initial setup user credentials
         // @todo allow setup option to restrict who is allowed to use
         $this->authUser = 0;
-        $sql = "INSERT INTO `module_faxsms_credentials` (`id`, `auth_user`, `vendor`, `credentials`) VALUES (NULL, ?, ?, ?) ON DUPLICATE KEY UPDATE `auth_user`= ?, `vendor` = ?, `credentials`= ?";
-        sqlStatement($sql, array($this->authUser,$vendor, $content, $this->authUser, $vendor, $content));
+        $sql = "INSERT INTO `module_faxsms_credentials` (`id`, `auth_user`, `vendor`, `credentials`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE `auth_user`= ?, `vendor` = ?, `credentials`= ?";
+        sqlStatement($sql, array('', $this->authUser,$vendor, $content, $this->authUser, $vendor, $content));
         return xlt('Save Success');
     }
 
@@ -267,7 +267,6 @@ private function indexAction()
      */
     protected function getSetup()
     {
-
         $vendor = self::getServiceType() === '1' ? '_ringcentral' : '_twilio';
         // for now we'll allow all users to use this service
         // @todo allow setup option to restrict who is allowed to use
