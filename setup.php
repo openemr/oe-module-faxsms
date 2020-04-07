@@ -15,16 +15,18 @@ use OpenEMR\Core\Header;
 
 // kick off app endpoints controller
 $clientApp = AppDispatch::getApiService();
+$service = $clientApp::getServiceType();
 $c = $clientApp->getCredentials();
 
-echo "<script>var pid=" . js_escape($pid) . "</script>";
 ?>
 <!DOCTYPE html>
 <html>
 <head>
     <title>Setup</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?php Header::setupHeader(); ?>
+    <?php Header::setupHeader();
+    echo "<script>var Service=" . js_escape($service) . "</script>";
+    ?>
     <script>
         $(function () {
             $('#setup-form').on('submit', function (e) {
@@ -65,7 +67,13 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                     });
                     return false;
                 }
-            })
+            });
+
+            if (Service === '2') {
+                $(".ringcentral").hide();
+            } else {
+                $(".twilio").hide();
+            }
         });
     </script>
 </head>
@@ -115,8 +123,8 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                             required="required" value='<?php echo attr($c['appSecret']) ?>'>
                     </div>
                     <div class="form-group">
-                        <label for="form_redirect_url"><?php echo xlt("OAuth Redirect URI") ?></label>
-                        <input id="form_redirect_url" type="text" name="redirect_url" class="form-control"
+                        <label class="ringcentral" for="form_redirect_url"><?php echo xlt("OAuth Redirect URI") ?></label>
+                        <input id="form_redirect_url" type="text" name="redirect_url" class="form-control ringcentral"
                             placeholder="<?php echo xlt('From RingCentral Account') ?>"
                             value='<?php echo attr($c['redirect_url']) ?>'>
                     </div>

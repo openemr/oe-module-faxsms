@@ -221,32 +221,33 @@ private function indexAction()
         return 0;
     }
 
-    protected function saveSetup()
+    protected function saveSetup($setup = [])
     {
-        $username = $this->getRequest('username');
-        $ext = $this->getRequest('extension');
-        $password = $this->getRequest('password');
-        $appkey = $this->getRequest('key');
-        $appsecret = $this->getRequest('secret');
-        $production = $this->getRequest('production');
-        $smsNumber = $this->getRequest('smsnumber');
-        $smsMessage = $this->getRequest('smsmessage');
-        $smsHours = $this->getRequest('smshours');
-        $setup = array(
-            'username' => "$username",
-            'extension' => "$ext",
-            'password' => "$password",
-            'appKey' => "$appkey",
-            'appSecret' => "$appsecret",
-            'server' => !$production ? 'https://platform.devtest.ringcentral.com' : "https://platform.ringcentral.com",
-            'portal' => !$production ? "https://service.devtest.ringcentral.com/" : "https://service.ringcentral.com/",
-            'smsNumber' => "$smsNumber",
-            'production' => $production,
-            'redirect_url' => $this->getRequest('redirect_url'),
-            'smsHours' => $smsHours,
-            'smsMessage' => $smsMessage
-        );
-
+        if (empty($setup)) {
+            $username = $this->getRequest('username');
+            $ext = $this->getRequest('extension');
+            $password = $this->getRequest('password');
+            $appkey = $this->getRequest('key');
+            $appsecret = $this->getRequest('secret');
+            $production = $this->getRequest('production');
+            $smsNumber = $this->getRequest('smsnumber');
+            $smsMessage = $this->getRequest('smsmessage');
+            $smsHours = $this->getRequest('smshours');
+            $setup = array(
+                'username' => "$username",
+                'extension' => "$ext",
+                'password' => "$password",
+                'appKey' => "$appkey",
+                'appSecret' => "$appsecret",
+                'server' => !$production ? 'https://platform.devtest.ringcentral.com' : "https://platform.ringcentral.com",
+                'portal' => !$production ? "https://service.devtest.ringcentral.com/" : "https://service.ringcentral.com/",
+                'smsNumber' => "$smsNumber",
+                'production' => $production,
+                'redirect_url' => $this->getRequest('redirect_url'),
+                'smsHours' => $smsHours,
+                'smsMessage' => $smsMessage
+            );
+        }
         $vendor = self::getServiceType() === '1' ? '_ringcentral' : '_twilio';
 
         $content = $this->crypto->encryptStandard(json_encode($setup));
@@ -267,10 +268,26 @@ private function indexAction()
      */
     protected function getSetup()
     {
+$DBSQL = <<<'DB'
+CREATE TABLE IF NOT EXISTS `module_faxsms_credentials`
+(
+`id` int(10) UNSIGNED NOT NULL,
+`auth_user` int(10) UNSIGNED DEFAULT '0',
+`vendor` varchar(60)  DEFAULT NULL,
+`credentials` mediumblob  NOT NULL,
+PRIMARY KEY (`id`),
+UNIQUE KEY `vendor` (`vendor`)
+) ENGINE = InnoDB COMMENT ='Vendor credentials for Fax/SMS';
+DB;
+        $db = $GLOBALS['dbase'];
+        $exist = sqlQuery("SHOW TABLES FROM `$db` LIKE 'module_faxsms_credentials'");
+        if (empty($exist)) {
+            $exist = sqlQuery($DBSQL);
+        }
         $vendor = self::getServiceType() === '1' ? '_ringcentral' : '_twilio';
-        // for now we'll allow all users to use this service
-        // @todo allow setup option to restrict who is allowed to use
+        // for now we'll allow all users to use this service credentials
         $this->authUser = 0;
+
         $credentials = sqlQuery("SELECT * FROM `module_faxsms_credentials` WHERE `auth_user` = ? AND `vendor` = ?", array($this->authUser, $vendor))['credentials'];
 
         if(empty($credentials)) {
@@ -281,20 +298,13 @@ private function indexAction()
             if(empty($credentials)) {
                 return $this->_credentials;
             }
-
-            return json_decode($this->crypto->decryptStandard($credentials), true);
+            $rtn = json_decode($this->crypto->decryptStandard($credentials), true);
+            $this->saveSetup($rtn);
+            return $rtn;
         }
 
         $credentials = json_decode($this->crypto->decryptStandard($credentials), true);
 
         return $credentials;
     }
-
 }
-
-/*interface oeMessagingInterface
-{
-    function getApi();
-
-    function build($type);
-}*/

@@ -12,12 +12,13 @@ $ignoreAuth = 1;
 require_once(__DIR__ . "/../../../../globals.php");
 
 use OpenEMR\Common\Crypto\CryptoGen;
+use Twilio\Security\RequestValidator;
 
 class FaxServer
 {
     private $baseDir;
     private $crypto;
-    private $authToken;
+    private $authToken, $authUser;
 
     public function __construct()
     {
@@ -25,8 +26,9 @@ class FaxServer
         $this->cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
         $this->serverUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'];
         $this->crypto = new CryptoGen();
+        $this->authUser = 0;
         $this->getCredentials();
-        $this->verify();
+        $this->validate();
         $this->dispatchActions();
     }
 
@@ -86,7 +88,7 @@ class FaxServer
         if(empty($credentials)) {
             // for legacy
             $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
-            $fn = self::getServiceType() === '1' ? '/_credentials.php' : '/_credentials_twilio.php';
+            $fn = '/_credentials_twilio.php';
             $credentials = file_get_contents($cacheDir . $fn);
             if(empty($credentials)) {
                 error_log(errorLogEscape("Failed get auth: legacy"));
@@ -103,6 +105,7 @@ class FaxServer
     }
 
     // verify request signature from twilio
+    // locally compute hash. Not used currently.
     private function verify($file = null)
     {
         $url = $this->serverUrl . $_SERVER['REQUEST_URI'];
@@ -159,5 +162,31 @@ class FaxServer
         http_response_code(200);
         echo '';
         exit;
+    }
+
+    /**
+     * Twilio validation of computed signatures
+     * This will ensure we're only transacting with Twilio.
+     *
+     * @return bool
+     */
+    private function validate() {
+        $url = $this->serverUrl . $_SERVER['REQUEST_URI'];
+        $me = $this->computeSignature($url, $_POST);
+        $signature = $_SERVER["HTTP_X_TWILIO_SIGNATURE"];
+        $token = $this->authToken;
+        $postVars = $_POST;
+
+        // Initialize the validator
+        $validator = new RequestValidator($token);
+
+        if ($validator->validate($signature, $url, $postVars)) {
+            //error_log(errorLogEscape("Confirmed Request from Twilio."));
+            return true;
+        } else {
+            error_log(errorLogEscape("Failed Request Signature verification Computed: " . $me . ' Twilio: ' . $signature));
+            http_response_code(401);
+            exit;
+        }
     }
 }
