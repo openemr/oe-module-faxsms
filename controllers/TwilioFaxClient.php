@@ -22,7 +22,6 @@ class TwilioFaxClient extends AppDispatch
     public $uriDir;
     public $serverUrl;
     public $credentials;
-    public $cacheDir;
     protected $crypto;
     private $sid;
     private $appKey;
@@ -33,23 +32,13 @@ class TwilioFaxClient extends AppDispatch
         $this->crypto = new CryptoGen();
         $this->baseDir = $GLOBALS['temporary_files_dir'];
         $this->uriDir = $GLOBALS['OE_SITE_WEBROOT'];
-        $this->cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
         $this->credentials = $this->getCredentials();
         parent::__construct();
     }
 
     public function getCredentials()
     {
-        // is this new user or credentials aren't setup?
-        if (!file_exists($this->cacheDir . '/_credentials_twilio.php')) {
-            // create setup json credentials from default template
-            mkdir($this->cacheDir, 0777, true);
-            $credentials = require(__DIR__ . '/../_credentials_twilio.php');
-            $content = $this->crypto->encryptStandard(json_encode($credentials));
-            file_put_contents($this->cacheDir . '/_credentials_twilio.php', $content);
-        }
-        $credentials = file_get_contents($this->cacheDir . '/_credentials_twilio.php');
-        $credentials = json_decode($this->crypto->decryptStandard($credentials), true);
+        $credentials = appDispatch::getSetup();
 
         $this->sid = $credentials['username'];
         $this->appKey = $credentials['appKey'];
@@ -191,6 +180,9 @@ class TwilioFaxClient extends AppDispatch
         if (empty($this->credentials)) {
             $this->credentials = $this->getCredentials();
         }
+        if(!$this->sid || !$this->appKey || !$this->appSecret) {
+            return 0;
+        }
 
         return 1;
     }
@@ -206,7 +198,7 @@ class TwilioFaxClient extends AppDispatch
             return json_encode($ee);
         };
         try {
-            // dateFrom and dateTo paramteres
+            // dateFrom and dateTo
             $timeFrom = 'T00:00:01Z';
             $timeTo = 'T23:59:59Z';
             $dateFrom = trim($dateFrom) . $timeFrom;
@@ -220,7 +212,8 @@ class TwilioFaxClient extends AppDispatch
                 ), 100);
             } catch (Exception $e) {
                 $message = $e->getMessage();
-                return json_encode('Error: ' . $message);
+                $emsg = xlt('Ensure account credentials are correct.');
+                return json_encode(array('error' => $message . " : " . $emsg));
             }
 
             $responseMsgs = [];
@@ -233,8 +226,8 @@ class TwilioFaxClient extends AppDispatch
                 $status = $messageStore->status;
                 // purge failed. a day is enough time to report.
                 if ($status) {
-                    $d1 = new DateTime($messageStore->dateCreated->format('Ymd Hm'));
-                    $d2 = new DateTime();
+                    $d1 = new DateTime($messageStore->dateCreated->format('Ymd Hi'));
+                    $d2 = new DateTime(gmdate('Ymd Hi', time()));
                     $dif = $d1->diff($d2);
                     $interval = ($dif->d * 24) + $dif->h;
                     if ($interval >= 12 && ($status != 'delivered' && $status != 'received')) {
@@ -243,18 +236,28 @@ class TwilioFaxClient extends AppDispatch
                         $f = $twilio->fax->v1->faxes($id)->delete();
                     }
                 }
-                $vUrl = "<a href='#' onclick=viewDocument(" . "event,'$uri','${id}','false')> <span class='glyphicon glyphicon-open'></span></a></br>";
-                $lastDate = $messageStore->dateCreated->format("M j Y h:m:s");
-                if (strtolower($messageStore->direction) == "inbound") {
-                    $responseMsgs[0] .= "<tr><td>" . $lastDate . "</td><td>" . $messageStore->numPages . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><<td>" . $vUrl . "</td></tr>";
+                if($status != 'failed') {
+                    $vUrl = "<a href='#' onclick=viewDocument(" . "event,'$uri','${id}','false')> <span class='fa fa-file-pdf-o'></span></a></br>";
                 } else {
-                    $responseMsgs[1] .= "<tr><td>" . $lastDate . "</td><td>" . $messageStore->numPages . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><<td>" . $vUrl . "</td></tr>";
+                    $vUrl = "<a href='#' title='Fax not saved to server because of failure'> <span class='fa fa-file-pdf-o text-danger'></span></a></br>";
+                }
+
+                //date_default_timezone_set('America/New_York'); // hope server sets tz.
+                $utc_time = strtotime($messageStore->dateCreated->format('Ymd His').' UTC');
+                $lastDate =  date('M j Y g:i:sa T', $utc_time);
+                $utc_time = strtotime($messageStore->dateUpdated->format('Ymd His').' UTC');
+                $updateDate =  date('M j Y g:i:sa T', $utc_time);
+                //$lastDate = $messageStore->dateCreated->format("M j Y g:i:s a");
+                if (strtolower($messageStore->direction) == "inbound") {
+                    $responseMsgs[0] .= "<tr><td>" . $lastDate . "</td><td>" . $lastDate . "</td><td>" . $messageStore->numPages . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><<td>" . $vUrl . "</td></tr>";
+                } else {
+                    $responseMsgs[1] .= "<tr><td>" . $lastDate . "</td><td>" . $updateDate . "</td><td>" . $messageStore->numPages . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><<td>" . $vUrl . "</td></tr>";
                 }
             }
         } catch (Exception $e) {
             $message = $e->getMessage();
-            $responseMsgs[] = "<tr><td>Error: " . $message . " " . xlt('Ensure credentials are correct.') . "</td></tr>";
-            echo json_encode($responseMsgs);
+            $responseMsgs = "<tr><td>" . $message . " : " . xlt('Ensure account credentials are correct.') . "</td></tr>";
+            echo json_encode(array('error' => $responseMsgs));
             exit();
         }
         if (empty($responseMsgs)) {

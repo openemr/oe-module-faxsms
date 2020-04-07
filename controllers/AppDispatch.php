@@ -12,12 +12,18 @@ namespace OpenEMR\Modules\FaxSMS\Controllers;
 
 use OpenEMR\Common\Crypto\CryptoGen;
 
+/**
+ * Class AppDispatch
+ *
+ * @package OpenEMR\Modules\FaxSMS\Controllers
+ */
 abstract class AppDispatch
 {
     private $_request, $_response, $_query, $_post, $_server, $_cookies, $_session;
+    protected $crypto;
     protected $_currentAction, $_defaultModel;
     static $_apiService;
-
+    private $_credentials, $authUser;
     const ACTION_DEFAULT = 'index';
 
     public function __construct()
@@ -28,12 +34,31 @@ abstract class AppDispatch
         $this->_server = &$_SERVER;
         $this->_cookies = &$_COOKIE;
         $this->_session = &$_SESSION;
-
+        $this->_credentials = array(
+            'username' => '',
+            'extension' => '',
+            'password' => '',
+            'appKey' => '',
+            'appSecret' => '',
+            'server' => '',
+            'portal' => '',
+            'smsNumber' => '',
+            'production' => '',
+            'redirect_url' => '',
+            'smsHours' => "50",
+            'smsMessage' => "A courtesy reminder for ***NAME*** \r\nFor the appointment scheduled on: ***DATE*** At: ***STARTTIME*** Until: ***ENDTIME*** \r\nWith: ***PROVIDER*** Of: ***ORG***\r\nPlease call if unable to attend.",
+        );
+        //$this->crypto = new CryptoGen();
+        $this->authUser = $this->getSession('authUser');
         $this->dispatchActions();
         $this->render();
     }
 
-    private function indexAction()
+abstract function faxProcessUploads();
+abstract function sendFax();
+abstract function sendSMS();
+
+private function indexAction()
     {
         return null;
     }
@@ -196,50 +221,90 @@ abstract class AppDispatch
         return 0;
     }
 
-    protected function saveSetup()
+    protected function saveSetup($setup = [])
     {
-        $username = $this->getRequest('username');
-        $ext = $this->getRequest('extension');
-        $password = $this->getRequest('password');
-        $appkey = $this->getRequest('key');
-        $appsecret = $this->getRequest('secret');
-        $production = $this->getRequest('production');
-        $smsNumber = $this->getRequest('smsnumber');
-        $smsMessage = $this->getRequest('smsmessage');
-        $smsHours = $this->getRequest('smshours');
-        $setup = array(
-            'username' => "$username",
-            'extension' => "$ext",
-            'password' => "$password",
-            'appKey' => "$appkey",
-            'appSecret' => "$appsecret",
-            'server' => !$production ? 'https://platform.devtest.ringcentral.com' : "https://platform.ringcentral.com",
-            'portal' => !$production ? "https://service.devtest.ringcentral.com/" : "https://service.ringcentral.com/",
-            'smsNumber' => "$smsNumber",
-            'production' => $production,
-            'redirect_url' => $this->getRequest('redirect_url'),
-            'smsHours' => $smsHours,
-            'smsMessage' => $smsMessage
-        );
-        $baseDir = $GLOBALS['OE_SITE_DIR'] . DIRECTORY_SEPARATOR . "messageStore";
-        $this->baseDir = $baseDir;
-
-        $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
-        $fn = self::getServiceType() === '1' ? '/_credentials.php' : '/_credentials_twilio.php';
-        if (!file_exists($cacheDir . $fn)) {
-            mkdir($cacheDir, 0777, true);
+        if (empty($setup)) {
+            $username = $this->getRequest('username');
+            $ext = $this->getRequest('extension');
+            $password = $this->getRequest('password');
+            $appkey = $this->getRequest('key');
+            $appsecret = $this->getRequest('secret');
+            $production = $this->getRequest('production');
+            $smsNumber = $this->getRequest('smsnumber');
+            $smsMessage = $this->getRequest('smsmessage');
+            $smsHours = $this->getRequest('smshours');
+            $setup = array(
+                'username' => "$username",
+                'extension' => "$ext",
+                'password' => "$password",
+                'appKey' => "$appkey",
+                'appSecret' => "$appsecret",
+                'server' => !$production ? 'https://platform.devtest.ringcentral.com' : "https://platform.ringcentral.com",
+                'portal' => !$production ? "https://service.devtest.ringcentral.com/" : "https://service.ringcentral.com/",
+                'smsNumber' => "$smsNumber",
+                'production' => $production,
+                'redirect_url' => $this->getRequest('redirect_url'),
+                'smsHours' => $smsHours,
+                'smsMessage' => $smsMessage
+            );
         }
-        $crypto = new CryptoGen();
-        $content = $crypto->encryptStandard(json_encode($setup));
-        file_put_contents($cacheDir . $fn, $content);
+        $vendor = self::getServiceType() === '1' ? '_ringcentral' : '_twilio';
 
+        $content = $this->crypto->encryptStandard(json_encode($setup));
+
+        // for now we'll allow any user to use this service initial setup user credentials
+        // @todo allow setup option to restrict who is allowed to use
+        $this->authUser = 0;
+        $sql = "INSERT INTO `module_faxsms_credentials` (`id`, `auth_user`, `vendor`, `credentials`) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE `auth_user`= ?, `vendor` = ?, `credentials`= ?";
+        sqlStatement($sql, array('', $this->authUser,$vendor, $content, $this->authUser, $vendor, $content));
         return xlt('Save Success');
     }
+
+    /**
+     * Common credentials storage between services
+     * the service class will set specific credential.
+     *
+     * @return array|mixed
+     */
+    protected function getSetup()
+    {
+$DBSQL = <<<'DB'
+CREATE TABLE IF NOT EXISTS `module_faxsms_credentials`
+(
+`id` int(10) UNSIGNED NOT NULL,
+`auth_user` int(10) UNSIGNED DEFAULT '0',
+`vendor` varchar(60)  DEFAULT NULL,
+`credentials` mediumblob  NOT NULL,
+PRIMARY KEY (`id`),
+UNIQUE KEY `vendor` (`vendor`)
+) ENGINE = InnoDB COMMENT ='Vendor credentials for Fax/SMS';
+DB;
+        $db = $GLOBALS['dbase'];
+        $exist = sqlQuery("SHOW TABLES FROM `$db` LIKE 'module_faxsms_credentials'");
+        if (empty($exist)) {
+            $exist = sqlQuery($DBSQL);
+        }
+        $vendor = self::getServiceType() === '1' ? '_ringcentral' : '_twilio';
+        // for now we'll allow all users to use this service credentials
+        $this->authUser = 0;
+
+        $credentials = sqlQuery("SELECT * FROM `module_faxsms_credentials` WHERE `auth_user` = ? AND `vendor` = ?", array($this->authUser, $vendor))['credentials'];
+
+        if(empty($credentials)) {
+            // for legacy
+            $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
+            $fn = self::getServiceType() === '1' ? '/_credentials.php' : '/_credentials_twilio.php';
+            $credentials = file_get_contents($cacheDir . $fn);
+            if(empty($credentials)) {
+                return $this->_credentials;
+            }
+            $rtn = json_decode($this->crypto->decryptStandard($credentials), true);
+            $this->saveSetup($rtn);
+            return $rtn;
+        }
+
+        $credentials = json_decode($this->crypto->decryptStandard($credentials), true);
+
+        return $credentials;
+    }
 }
-
-/*interface oeMessagingInterface
-{
-    function getApi();
-
-    function build($type);
-}*/

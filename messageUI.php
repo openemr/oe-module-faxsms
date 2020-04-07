@@ -85,9 +85,12 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             $("#todate").val(new Date().toJSON().slice(0, 10));
             if (Service === '2') {
                 $(".ringcentral").hide();
+            } else {
+                $(".twilio").hide();
             }
             // populate
             retrieveMsgs();
+            $('#received').tab('show');
         });
 
         var wait = '<span id="wait"><?php echo xlt("Fetching Remote") . '..';?><i class="fa fa-cog fa-spin fa-2x"></i></span>';
@@ -98,7 +101,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             let url = top.webroot_url + '/interface/modules/custom_modules/oe-module-faxsms/contact.php?isDocuments=false&isQueue=' +
                 encodeURIComponent(from) + '&file=' + filePath; // do not encode filePath
             // leave dialog name param empty so send dialogs can cascade.
-            dlgopen(url, '', 'modal-sm', 550, '', title, { // dialog restores session
+            dlgopen(url, '', 'modal-md', 250, '', title, { // dialog restores session
                 buttons: [
                     {text: btnClose, close: true, style: 'default btn-sm'}
                 ]
@@ -126,12 +129,11 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             top.restoreSession();
             e.preventDefault();
             let msg = <?php echo xlj('Credentials and SMS Notifications') ?>;
-            dlgopen('', 'setup', 'modal-md', 700, '', msg, {
+            dlgopen('', 'setup', 'modal-md', 500, '', msg, {
                 buttons: [
                     {text: 'Cancel', close: true, style: 'default  btn-sm'}
                 ],
-                url: 'setup.php',
-                sizeHeight: 'full'
+                url: 'setup.php'
             });
         };
 
@@ -155,14 +157,14 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             e.preventDefault();
             let wait = '<span id="wait"><?php echo xlt("Fetching Document") . '..';?><i class="fa fa-cog fa-spin fa-2x"></i></span>';
             let actionUrl = 'viewFax';
-            $("#brand").append(wait);
+            $("#brand").addClass('fa-spin');
             return $.post(actionUrl, {
                 'docuri': docuri,
                 'docid': docid,
                 'pid': pid,
                 'download': downFlag
             }).done(function (data) {
-                $("#wait").remove();
+                $("#brand").removeClass('fa-spin');
                 if (downFlag === 'true') {
                     location.href = "disposeDoc";
                     return false;
@@ -182,8 +184,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             let datefrom = $('#fromdate').val();
             let dateto = $('#todate').val();
             let data = [];
-
-            $("#brand").append(wait);
+            $("#brand").addClass('fa-spin');
             $("#rcvdetails tbody").empty();
             $("#sentdetails tbody").empty();
             $("#msgdetails tbody").empty();
@@ -195,14 +196,8 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                 }, function () {
                 }, 'json').done(function (data) {
                 if (data.error) {
-                    $("#wait").remove();
-                    var err = (data.error.search(/Exception/) !== -1 ? 1 : 0);
-                    if (!err) {
-                        err = (data.error.search(/Error:/) !== -1 ? 1 : 0);
-                    }
-                    if (err) {
-                        alertMsg(data.error);
-                    }
+                    $("#brand").removeClass('fa-spin');
+                    alertMsg(data.error);
                     return false;
                 }
                 // populate our panels
@@ -214,7 +209,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             }).fail(function (xhr, status, error) {
                 alertMsg(<?php echo xlj('Not Authenticated. Restart from Modules menu or ensure credentials are setup from Activity menu.') ?>, 5000)
             }).always(function () {
-                $("#wait").remove();
+                $("#brand").removeClass('fa-spin');
             });
         }
 
@@ -226,7 +221,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             let datefrom = $('#fromdate').val();
             let dateto = $('#todate').val();
 
-            $("#brand").append(wait);
+            $("#brand").addClass('fa-spin');
             return $.post(actionUrl, {
                 'pid': pid,
                 'datefrom': datefrom,
@@ -244,7 +239,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                 // Get SMS appointments notifications
                 getNotificationLog();
             }).always(function () {
-                $("#wait").remove();
+                $("#brand").removeClass('fa-spin');
             });
         }
 
@@ -255,7 +250,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
             let datefrom = $('#fromdate').val() + " 00:00:00";
             let dateto = $('#todate').val() + " 23:59:59";
 
-            $("#brand").append(wait);
+            $("#brand").addClass('fa-spin');
             return $.post(actionUrl, {
                 'pid': pid,
                 'datefrom': datefrom,
@@ -270,7 +265,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                 }
                 $("#alertdetails tbody").empty().append(data);
             }).always(function () {
-                $("#wait").remove();
+                $("#brand").removeClass('fa-spin');
             });
         }
 
@@ -308,8 +303,8 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                     </div>
                     <div class="form-group">
                         <button type="button" class="btn btn-default" onclick="retrieveMsgs(event,this)" title="<?php echo xla('Click to get current history.') ?>">
-                            <i class="glyphicon glyphicon-refresh"></i></button>
-                        <span id="brand"></span>
+                            <i id="brand" class="fa fa-refresh"></i></button>
+                        <span ></span>
                     </div>
                 </form>
                 <ul class="nav navbar-nav navbar-right">
@@ -350,12 +345,13 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                 </ul>
                 <!-- Tab panes -->
                 <div class="tab-content">
-                    <div role="tabpanel" class="tab-pane fade" id="received">
+                    <div role="tabpanel" class="container-fluid tab-pane fade" id="received">
                         <div class="table-responsive">
                             <table class="table table-condensed table-striped" id="rcvdetails">
                                 <thead>
                                 <tr>
-                                    <th><?php echo xlt("Date") ?></th>
+                                    <th><?php echo xlt("Start Time") ?></th>
+                                    <th class="twilio"><?php echo xlt("End Time") ?></th>
                                     <th class="ringcentral"><?php echo xlt("Type") ?></th>
                                     <th><?php echo xlt("Pages") ?></th>
                                     <th><?php echo xlt("From") ?></th>
@@ -373,12 +369,13 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                             </table>
                         </div>
                     </div>
-                    <div role="tabpanel" class="tab-pane fade" id="sent">
+                    <div role="tabpanel" class="container-fluid tab-pane fade" id="sent">
                         <div class="table-responsive">
                             <table class="table table-condensed table-striped" id="sentdetails">
                                 <thead>
                                 <tr>
-                                    <th><?php echo xlt("Date") ?></th>
+                                    <th><?php echo xlt("Start Time") ?></th>
+                                    <th class="twilio"><?php echo xlt("End Time") ?></th>
                                     <th class="ringcentral"><?php echo xlt("Type") ?></th>
                                     <th><?php echo xlt("Pages") ?></th>
                                     <th><?php echo xlt("From") ?></th>
@@ -396,7 +393,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                             </table>
                         </div>
                     </div>
-                    <div role="tabpanel" class="tab-pane fade" id="messages">
+                    <div role="tabpanel" class="container-fluid tab-pane fade" id="messages">
                         <div class="table-responsive">
                             <table class="table table-condensed table-striped" id="msgdetails">
                                 <thead>
@@ -418,7 +415,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                             </table>
                         </div>
                     </div>
-                    <div role="tabpanel" class="tab-pane fade" id="logs">
+                    <div role="tabpanel" class="container-fluid tab-pane fade" id="logs">
                         <div class="table-responsive">
                             <table class="table table-condensed table-striped" id="logdetails">
                                 <thead>
@@ -440,7 +437,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                             </table>
                         </div>
                     </div>
-                    <div role="tabpanel" class="tab-pane fade" id="alertlogs">
+                    <div role="tabpanel" class="container-fluid tab-pane fade" id="alertlogs">
                         <div class="table-responsive">
                             <table class="table table-condensed table-striped" id="alertdetails">
                                 <thead>
@@ -460,7 +457,7 @@ $title = $service == "1" ? 'RingCentral' : 'Twilio';
                             </table>
                         </div>
                     </div>
-                    <div role="tabpanel" class="tab-pane fade in active" id="upLoad">
+                    <div role="tabpanel" class="container-fluid tab-pane fade in active" id="upLoad">
                         <div class="panel container-fluid">
                             <div id="fax-queue-container">
                                 <div id="fax-queue">

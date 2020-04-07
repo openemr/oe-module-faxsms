@@ -1,1 +1,1 @@
-Open EMR Fax Module
+FaxSMS Module v1.2.0
