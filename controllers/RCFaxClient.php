@@ -502,7 +502,7 @@ class RCFaxClient extends AppDispatch
                         $errors = $messageStore->to[0]->faxErrorCode ? "why: " . $messageStore->to[0]->faxErrorCode : $messageStore->from->faxErrorCode;
                         $status = $messageStore->messageStatus . " " . $errors;
                         $aUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','${id}','true')>" . ${id} . " <span class='fa fa-download'></span></a></br>";
-                        $vUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','${id}','false')> <span class='fa fa-file-pdf-o'></span></a></br>";
+                        $vUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','${id}','false')> <span class='fa fa-file-pdf'></span></a></br>";
 
                         if (strtolower($messageStore->type) === "sms") {
                             $responseMsgs[2] .= "<tr><td>" . str_replace(array("T", "Z"), " ", $messageStore->lastModifiedTime) . "</td><td>" . $messageStore->type . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><td>" . $aUrl . "</td><td>" . $vUrl . "</td></tr>";

@@ -237,9 +237,9 @@ class TwilioFaxClient extends AppDispatch
                     }
                 }
                 if($status != 'failed') {
-                    $vUrl = "<a href='#' onclick=viewDocument(" . "event,'$uri','${id}','false')> <span class='fa fa-file-pdf-o'></span></a></br>";
+                    $vUrl = "<a href='#' onclick=viewDocument(" . "event,'$uri','${id}','false')> <span class='fa fa-file-pdf'></span></a></br>";
                 } else {
-                    $vUrl = "<a href='#' title='Fax not saved to server because of failure'> <span class='fa fa-file-pdf-o text-danger'></span></a></br>";
+                    $vUrl = "<a href='#' title='Fax not saved to server because of failure'> <span class='fa fa-file-pdf text-danger'></span></a></br>";
                 }
 
                 //date_default_timezone_set('America/New_York'); // hope server sets tz.
