@@ -17,7 +17,7 @@ use Twilio\Security\RequestValidator;
 class FaxServer
 {
     private $baseDir;
-    private $crypto;
+    private $crypto, $production;
     private $authToken, $authUser;
 
     public function __construct()
@@ -28,7 +28,10 @@ class FaxServer
         $this->crypto = new CryptoGen();
         $this->authUser = 0;
         $this->getCredentials();
-        $this->validate();
+        if($this->production){
+            $this->validate();
+        }
+
         $this->dispatchActions();
     }
 
@@ -99,6 +102,7 @@ class FaxServer
 
         $credentials = json_decode($this->crypto->decryptStandard($credentials), true);
         $this->authToken = $credentials['password'];
+        $this->production = $credentials['production'];
         unset($credentials);
 
         return;
@@ -184,7 +188,7 @@ class FaxServer
             //error_log(errorLogEscape("Confirmed Request from Twilio."));
             return true;
         } else {
-            error_log(errorLogEscape("Failed Request Signature verification Computed: " . $me . ' Twilio: ' . $signature));
+            error_log(errorLogEscape("Failed Request Signature verification Url: $url Computed: " . $me . ' Twilio: ' . $signature));
             http_response_code(401);
             exit;
         }

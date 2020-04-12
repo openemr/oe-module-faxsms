@@ -63,7 +63,7 @@ $service = $clientApp::getServiceType();
                                 setTimeout(function () {
                                     if (!err) {
                                         // empty the form
-                                        $('#contact-form')[0].reset();
+                                        //$('#contact-form')[0].reset();
                                         $(".alert").alert('close');
                                         dlgclose();
                                     }
@@ -71,7 +71,7 @@ $service = $clientApp::getServiceType();
                                     // reload so OAuth dialog can do it's annoying thing.
                                     // backend prepared for this.
                                     location.reload();
-                                }, 4500);
+                                }, 2000);
                             }
                         }
                     });
@@ -138,7 +138,7 @@ $service = $clientApp::getServiceType();
                     </div>
                     <div class="form-group">
                         <label for="form_phone"><?php echo xlt('Fax Phone') ?> *</label>
-                        <input id="form_phone" type="tel" name="phone" class="form-control" required="required">
+                        <input id="form_phone" type="tel" name="phone" class="form-control" required="required" placeholder="<?php echo xla('Phone is the only requirement for Twilio') ?>">
                         <div class="help-block with-errors"></div>
                     </div>
                     <?php if ($service != "2") { ?>
