@@ -15,6 +15,7 @@ use OpenEMR\Core\Header;
 
 // kick off app endpoints controller
 $clientApp = AppDispatch::getApiService();
+$service = $clientApp::getServiceType();
 $c = $clientApp->getCredentials();
 
 echo "<script>var pid=" . js_escape($pid) . "</script>";
@@ -24,49 +25,63 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
 <head>
     <title>Setup</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?php Header::setupHeader(); ?>
+    <?php Header::setupHeader();
+    echo "<script>var Service=" . js_escape($service) . ";</script>";
+    ?>
     <script>
-        $(document).ready(function () {
-            $(function () {
-                $('#setup-form').on('submit', function (e) {
-                    if (!e.isDefaultPrevented()) {
-                        let wait = '<i class="fa fa-cog fa-spin fa-4x"></i>';
-                        let url = 'saveSetup';
-                        $.ajax({
-                            type: "POST",
-                            url: url,
-                            data: $(this).serialize(),
-                            success: function (data) {
-                                var err = (data.search(/Exception/) !== -1 ? 1 : 0);
+        $(function () {
+            $('#setup-form').on('submit', function (e) {
+                if (!e.isDefaultPrevented()) {
+                    $(window).scrollTop(0);
+                    let wait = '<i class="fa fa-cog fa-spin fa-4x"></i>';
+                    let url = 'saveSetup';
+                    $.ajax({
+                        type: "POST",
+                        url: url,
+                        data: $(this).serialize(),
+                        success: function (data) {
+                            var err = (data.search(/Exception/) !== -1 ? 1 : 0);
+                            if (!err) {
+                                err = (data.search(/Error:/) !== -1 ? 1 : 0);
+                            }
+                            var messageAlert = 'alert-' + (err !== 0 ? 'danger' : 'success');
+                            var messageText = data;
+                            var alertBox = '<div class="alert ' + messageAlert + ' alert-dismissable"><button type="button" ' +
+                                'class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' + messageText + '</div>';
+                            if (messageAlert && messageText) {
+                                // inject the alert to .messages div in our form
+                                $('#setup-form').find('.messages').html(alertBox);
                                 if (!err) {
-                                    err = (data.search(/Error:/) !== -1 ? 1 : 0);
-                                }
-                                var messageAlert = 'alert-' + (err !== 0 ? 'danger' : 'success');
-                                var messageText = data;
-                                var alertBox = '<div class="alert ' + messageAlert + ' alert-dismissable"><button type="button" ' +
-                                    'class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' + messageText + '</div>';
-                                if (messageAlert && messageText) {
-                                    // inject the alert to .messages div in our form
-                                    $('#setup-form').find('.messages').html(alertBox);
-                                    if (!err) {
-                                        // empty the form
-                                        $('#setup-form')[0].reset();
-                                        setTimeout(function () {
-                                            dlgclose();
-                                        }, 2000);
-                                    }
+                                    // empty the form
+                                    $('#setup-form')[0].reset();
+                                    setTimeout(function () {
+                                        $('#setup-form').find('.messages').remove();
+                                        <?php if (!$module_config) { ?>
+                                        dlgclose();
+                                        <?php } else { ?>
+                                        location.reload();
+                                        <?php } ?>
+                                    }, 2000);
                                 }
                             }
-                        });
-                        return false;
-                    }
-                })
+                        }
+                    });
+                    return false;
+                }
             });
+            if (Service === '2') {
+                $(".ringcentral").hide();
+            } else {
+                $(".twilio").hide();
+            }
         });
     </script>
 </head>
 <body>
     <div class="container-fluid">
+        <?php if ($module_config) { ?>
+            <h4>Setup Credentials</h4>
+        <?php } ?>
         <form class="form" id="setup-form" role="form">
             <div class="messages"></div>
             <div class="row">
@@ -89,7 +104,7 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                                 required="required" value='<?php echo attr($c['extension']) ?>'>
                         </div>
                         <div class="form-group">
-                            <label for="form_password"><?php echo xlt("Password") ?> *</label>
+                            <label for="form_password"><?php echo xlt("Password or Auth Token") ?> *</label>
                             <input id="form_password" type="text" name="password" class="form-control"
                                 required="required" value='<?php echo attr($c['password']) ?>'>
                         </div>
@@ -111,8 +126,8 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                                 required="required" value='<?php echo attr($c['appSecret']) ?>'>
                         </div>
                         <div class="form-group">
-                            <label for="form_redirect_url"><?php echo xlt("OAuth Redirect URI") ?></label>
-                            <input id="form_redirect_url" type="text" name="redirect_url" class="form-control"
+                            <label class="ringcentral" for="form_redirect_url"><?php echo xlt("OAuth Redirect URI") ?></label>
+                            <input id="form_redirect_url" type="text" name="redirect_url" class="form-control ringcentral"
                                 placeholder="<?php echo xlt('From RingCentral Account') ?>"
                                 value='<?php echo attr($c['redirect_url']) ?>'>
                         </div>

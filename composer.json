@@ -29,5 +29,8 @@
         "replace": {
             "pubnub/pubnub": "*"
         }
-   }
+   },
+    "conflict": {
+        "openemr/openemr": ">=5.0.3"
+    }
 }

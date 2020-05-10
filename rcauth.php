@@ -24,8 +24,18 @@ $callbackUrl = $_SESSION['redirect_uri'];
 
 function processCode()
 {
-    $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
-    $credentials = file_get_contents($cacheDir . '/_credentials.php');
+    $vendor = '_ringcentral';
+    $authUser = 0;
+    $credentials = sqlQuery("SELECT * FROM `module_faxsms_credentials` WHERE `auth_user` = ? AND `vendor` = ?", array($authUser, $vendor))['credentials'];
+
+    if(empty($credentials)) {
+        // for legacy
+        $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
+        $credentials = file_get_contents($cacheDir . '/_credentials.php');
+        if(empty($credentials)) {
+            die('Credential Error');
+        }
+    }
     $cryptoGen = new CryptoGen();
     $credentials = json_decode($cryptoGen->decryptStandard($credentials), true);
     $serverUrl = !$credentials['production'] ? "https://platform.devtest.ringcentral.com" : "https://platform.ringcentral.com";
