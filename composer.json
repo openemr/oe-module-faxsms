@@ -21,9 +21,9 @@
         "openemr/oe-module-installer-plugin": "^0.1.0",
     	"ext-curl": "*",
     	"ext-json": "*",
-    	"php": "^7.2",
-        "ringcentral/ringcentral-php": "2.2.5",
-        "twilio/sdk": "6.13.0"
+    	"php": "^7.1",
+        "ringcentral/ringcentral-php": "2.2.3",
+        "twilio/sdk": "5.34.4"
     },
     "config": {
         "replace": {
@@ -31,6 +31,6 @@
         }
    },
     "conflict": {
-        "openemr/openemr": "<6.0.0"
+        "openemr/openemr": ">=5.0.3"
     }
 }
