@@ -1,1 +1,1 @@
-Fax and SMS Module v2.1.0
+FaxSMS Module v2.2.0
