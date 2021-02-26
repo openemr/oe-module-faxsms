@@ -8,6 +8,8 @@
  * @copyright Copyright (c) 2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
+$sessionAllowWrite = true;
 $ignoreAuth = 1;
 require_once(__DIR__ . "/../../../../globals.php");
 

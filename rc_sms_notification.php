@@ -6,10 +6,11 @@
 //
 // Created by:
 // Updated by:  Larry Lart on 11/03/2008
-// Updated by:  Jerry Padgett on 06/19/2018
+// Updated by:  Jerry Padgett on 06/19/2018-2021
 // Rework of original
 ////////////////////////////////////////////////////////////////////
 //hack add for command line version
+
 use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 
 $_SERVER['REQUEST_URI'] = $_SERVER['PHP_SELF'];
@@ -89,7 +90,7 @@ flush();
 // for every event found
 $plast = '';
 echo "<h3>========================" . $TYPE . " | " . date("Y-m-d H:i:s") . "=========================</h3>";
-for ($p = 0; $p < count($db_patient); $p++) {
+for ($p = 0, $pMax = count($db_patient); $p < $pMax; $p++) {
     ob_flush();
     flush();
     $prow = $db_patient[$p];
@@ -127,7 +128,6 @@ for ($p = 0; $p < count($db_patient); $p++) {
                 $db_sms_msg['email_sender']
             );
         }
-
 
         if (!$isValid) {
             $strMsg .= "<strong style='color:red'>\n* INVALID Mobile Phone# " . $prow['phone_cell'] . " SMS NOT SENT</strong> Patient: " . $prow['fname'] . " " . $prow['lname'] . "</b>";
