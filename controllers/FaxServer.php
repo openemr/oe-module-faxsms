@@ -8,6 +8,8 @@
  * @copyright Copyright (c) 2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
+$sessionAllowWrite = true;
 $ignoreAuth = 1;
 require_once(__DIR__ . "/../../../../globals.php");
 
@@ -17,7 +19,7 @@ use Twilio\Security\RequestValidator;
 class FaxServer
 {
     private $baseDir;
-    private $crypto;
+    private $crypto, $production;
     private $authToken, $authUser;
 
     public function __construct()
@@ -28,7 +30,10 @@ class FaxServer
         $this->crypto = new CryptoGen();
         $this->authUser = 0;
         $this->getCredentials();
-        $this->validate();
+        if($this->production){
+            $this->validate();
+        }
+
         $this->dispatchActions();
     }
 
@@ -85,12 +90,12 @@ class FaxServer
         $this->authUser = 0;
         $credentials = sqlQuery("SELECT * FROM `module_faxsms_credentials` WHERE `auth_user` = ? AND `vendor` = ?", array($this->authUser, '_twilio'))['credentials'];
 
-        if (empty($credentials)) {
+        if(empty($credentials)) {
             // for legacy
             $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
             $fn = '/_credentials_twilio.php';
             $credentials = file_get_contents($cacheDir . $fn);
-            if (empty($credentials)) {
+            if(empty($credentials)) {
                 error_log(errorLogEscape("Failed get auth: legacy"));
                 http_response_code(401);
                 exit;
@@ -99,6 +104,7 @@ class FaxServer
 
         $credentials = json_decode($this->crypto->decryptStandard($credentials), true);
         $this->authToken = $credentials['password'];
+        $this->production = $credentials['production'];
         unset($credentials);
 
         return;
@@ -170,8 +176,7 @@ class FaxServer
      *
      * @return bool
      */
-    private function validate()
-    {
+    private function validate() {
         $url = $this->serverUrl . $_SERVER['REQUEST_URI'];
         $me = $this->computeSignature($url, $_POST);
         $signature = $_SERVER["HTTP_X_TWILIO_SIGNATURE"];
@@ -185,7 +190,7 @@ class FaxServer
             //error_log(errorLogEscape("Confirmed Request from Twilio."));
             return true;
         } else {
-            error_log(errorLogEscape("Failed Request Signature verification Computed: " . $me . ' Twilio: ' . $signature));
+            error_log(errorLogEscape("Failed Request Signature verification Url: $url Computed: " . $me . ' Twilio: ' . $signature));
             http_response_code(401);
             exit;
         }

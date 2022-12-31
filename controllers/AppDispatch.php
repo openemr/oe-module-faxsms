@@ -20,10 +20,10 @@ use OpenEMR\Common\Crypto\CryptoGen;
 abstract class AppDispatch
 {
     private $_request, $_response, $_query, $_post, $_server, $_cookies, $_session;
+    private $authUser;
     protected $crypto;
-    protected $_currentAction, $_defaultModel;
+    protected $_currentAction;
     static $_apiService;
-    private $_credentials, $authUser;
     const ACTION_DEFAULT = 'index';
 
     public function __construct()
@@ -34,22 +34,7 @@ abstract class AppDispatch
         $this->_server = &$_SERVER;
         $this->_cookies = &$_COOKIE;
         $this->_session = &$_SESSION;
-        $this->_credentials = array(
-            'username' => '',
-            'extension' => '',
-            'password' => '',
-            'appKey' => '',
-            'appSecret' => '',
-            'server' => '',
-            'portal' => '',
-            'smsNumber' => '',
-            'production' => '',
-            'redirect_url' => '',
-            'smsHours' => "50",
-            'smsMessage' => "A courtesy reminder for ***NAME*** \r\nFor the appointment scheduled on: ***DATE*** At: ***STARTTIME*** Until: ***ENDTIME*** \r\nWith: ***PROVIDER*** Of: ***ORG***\r\nPlease call if unable to attend.",
-        );
-        //$this->crypto = new CryptoGen();
-        $this->authUser = $this->getSession('authUser');
+        $this->authUser = (int)$this->getSession('authUserID');
         $this->dispatchActions();
         $this->render();
     }
@@ -163,8 +148,7 @@ private function indexAction()
     public function getServer($param = null, $default = null)
     {
         if ($param) {
-            return isset($this->_server[$param]) ?
-                $this->_server[$param] : $default;
+            return $this->_server[$param] ?? $default;
         }
 
         return $this->_server;
@@ -173,8 +157,7 @@ private function indexAction()
     public function getSession($param = null, $default = null)
     {
         if ($param) {
-            return isset($this->_session[$param]) ?
-                $this->_session[$param] : $default;
+            return $this->_session[$param] ?? $default;
         }
 
         return $this->_session;
@@ -183,8 +166,7 @@ private function indexAction()
     public function getCookie($param = null, $default = null)
     {
         if ($param) {
-            return isset($this->_cookies[$param]) ?
-                $this->_cookies[$param] : $default;
+            return $this->_cookies[$param] ?? $default;
         }
 
         return $this->_cookies;
@@ -221,7 +203,7 @@ private function indexAction()
         return 0;
     }
 
-    protected function saveSetup($setup = [])
+    protected function saveSetup($setup = []): string
     {
         if (empty($setup)) {
             $username = $this->getRequest('username');
@@ -291,16 +273,21 @@ DB;
         $credentials = sqlQuery("SELECT * FROM `module_faxsms_credentials` WHERE `auth_user` = ? AND `vendor` = ?", array($this->authUser, $vendor))['credentials'];
 
         if(empty($credentials)) {
-            // for legacy
-            $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
-            $fn = self::getServiceType() === '1' ? '/_credentials.php' : '/_credentials_twilio.php';
-            $credentials = file_get_contents($cacheDir . $fn);
-            if(empty($credentials)) {
-                return $this->_credentials;
-            }
-            $rtn = json_decode($this->crypto->decryptStandard($credentials), true);
-            $this->saveSetup($rtn);
-            return $rtn;
+            $credentials = array(
+                'username' => '',
+                'extension' => '',
+                'password' => '',
+                'appKey' => '',
+                'appSecret' => '',
+                'server' => '',
+                'portal' => '',
+                'smsNumber' => '',
+                'production' => '',
+                'redirect_url' => '',
+                'smsHours' => "50",
+                'smsMessage' => "A courtesy reminder for ***NAME*** \r\nFor the appointment scheduled on: ***DATE*** At: ***STARTTIME*** Until: ***ENDTIME*** \r\nWith: ***PROVIDER*** Of: ***ORG***\r\nPlease call if unable to attend.",
+            );
+            return $credentials;
         }
 
         $credentials = json_decode($this->crypto->decryptStandard($credentials), true);

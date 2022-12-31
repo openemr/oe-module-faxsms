@@ -52,6 +52,9 @@ class TwilioFaxClient extends AppDispatch
 
     public function sendSMS($tophone = '', $subject = '', $message = '', $from = '')
     {
+        $tophone = $tophone ?: $this->getRequest('phone');
+        $message = $message ?: $this->getRequest('comments');
+
         if (empty($from)) {
             $from = $this->formatPhone($this->credentials['smsNumber']);
         } else {
@@ -64,8 +67,8 @@ class TwilioFaxClient extends AppDispatch
                 ->create(
                     $tophone,
                     array(
-                        "body" => $message,
-                        "from" => $from
+                        "body" => text($message),
+                        "from" => attr($from)
                     )
                 );
         } catch (Exception $e) {
@@ -119,6 +122,7 @@ class TwilioFaxClient extends AppDispatch
         }
         $isContent = $this->getRequest('isContent');
         $file = $this->getRequest('file');
+        $mime = $this->getRequest('mime');
         $phone = $this->getRequest('phone');
         $isDocuments = $this->getRequest('isDocuments');
         $isQueue = $this->getRequest('isQueue');
@@ -146,6 +150,11 @@ class TwilioFaxClient extends AppDispatch
         if ($this->crypto->cryptCheckStandard($content)) {
             $content = $this->crypto->decryptStandard($content, null, 'database');
         }
+
+        $type = \GuzzleHttp\Psr7\MimeType::fromFilename($basename);
+        if (empty($type)) {
+            $basename .= ".pdf";
+        }
         if ($content) {
             $tmpPath = $this->baseDir . '/send/' . $basename;
             file_put_contents($tmpPath, $content);
@@ -154,7 +163,7 @@ class TwilioFaxClient extends AppDispatch
         // api rest call to fax server to verify twilio request signature and stream file
         $faxfile = $this->serverUrl . $GLOBALS['webroot'] .
             '/interface/modules/custom_modules/oe-module-faxsms/faxserver/serveFax?site=' . $this->getSession('site_id') .
-            '&file=' . attr($basename);
+            '&file=' . urlencode($basename);
         // callback on completion of fax send
         $callbackUrl = $this->serverUrl . $GLOBALS['webroot'] .
             '/interface/modules/custom_modules/oe-module-faxsms/faxserver/faxCallback?site=' . $this->getSession('site_id');
@@ -174,7 +183,7 @@ class TwilioFaxClient extends AppDispatch
         return xlt('Send Successful');
     }
 
-    public function authenticate($action_flg = null)
+    public function authenticate($action_flg = null): int
     {
         // did construct happen...
         if (empty($this->credentials)) {
@@ -237,9 +246,9 @@ class TwilioFaxClient extends AppDispatch
                     }
                 }
                 if($status != 'failed') {
-                    $vUrl = "<a href='#' onclick=viewDocument(" . "event,'$uri','${id}','false')> <span class='fa fa-file-pdf-o'></span></a></br>";
+                    $vUrl = "<a href='#' onclick=viewDocument(" . "event,'$uri','${id}','false')> <span class='fa fa-file-pdf'></span></a></br>";
                 } else {
-                    $vUrl = "<a href='#' title='Fax not saved to server because of failure'> <span class='fa fa-file-pdf-o text-danger'></span></a></br>";
+                    $vUrl = "<a href='#' title='Fax not saved to server because of failure'> <span class='fa fa-file-pdf text-danger'></span></a></br>";
                 }
 
                 //date_default_timezone_set('America/New_York'); // hope server sets tz.
