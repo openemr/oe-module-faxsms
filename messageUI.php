@@ -90,6 +90,8 @@ if (empty($logged_in) && $service == "1") {
             var dateRange = new Date(new Date().setDate(new Date().getDate() - 7));
             $("#fromdate").val(dateRange.toJSON().slice(0, 10));
             $("#todate").val(new Date().toJSON().slice(0, 10));
+
+            $(".other").hide();
             if (currentService == '2') {
                 $(".ringcentral").hide();
             } else if (currentService == '1') {
@@ -384,13 +386,13 @@ if (empty($logged_in) && $service == "1") {
                     <ul id="tab-menu" class="nav nav-pills" role="tablist">
                         <li class="nav-item" role="tab"><a class="nav-link active" href="#received" aria-controls="received" role="tab" data-toggle="tab"><?php echo xlt("Received") ?></a></li>
                         <li class="nav-item" role="tab"><a class="nav-link" href="#sent" aria-controls="sent" role="tab" data-toggle="tab"><?php echo xlt("Sent") ?></a></li>
-                        <li class="nav-item ringcentral" role="tab"><a class="nav-link" href="#messages" aria-controls="messages" role="tab" data-toggle="tab"><?php echo xlt("SMS Log") ?></a></li>
-                        <li class="nav-item ringcentral" role="tab"><a class="nav-link" href="#logs" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Call Log") ?></a></li>
+                        <li class="nav-item" role="tab"><a class="nav-link" href="#messages" aria-controls="messages" role="tab" data-toggle="tab"><?php echo xlt("SMS Log") ?></a></li>
+                        <li class="nav-item" role="tab"><a class="nav-link" href="#logs" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Call Log") ?></a></li>
                         <li class="nav-item" role="tab">
                             <a class="nav-link" href="#alertlogs" aria-controls="alertlogs" role="tab" data-toggle="tab"><?php echo xlt("Reminder Notifications Log") ?><span class="fa fa-redo ml-1" onclick="getNotificationLog(event,this)"
                                     title="<?php echo xla('Click to refresh using current date range. Refreshing just this tab.') ?>"></span></a>
                         </li>
-                        <li class="nav-item" role="tab"><a class="nav-link" href="#upLoad" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Upload Fax") ?></a></li>
+                        <li class="nav-item ringcentral" role="tab"><a class="nav-link" href="#upLoad" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Upload Fax") ?></a></li>
                     </ul>
                     <!-- Tab panes -->
                     <div class="tab-content">
@@ -407,7 +409,7 @@ if (empty($logged_in) && $service == "1") {
                                         <th><?php echo xlt("To") ?></th>
                                         <th><?php echo xlt("Result") ?></th>
                                         <th class="ringcentral"><?php echo xlt("Download") ?></th>
-                                        <th class="twilio"><?php echo xlt("View") ?></th>
+                                        <th class="twilio"><?php echo xlt("Reply") ?></th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -431,7 +433,7 @@ if (empty($logged_in) && $service == "1") {
                                         <th><?php echo xlt("To") ?></th>
                                         <th><?php echo xlt("Result") ?></th>
                                         <th class="ringcentral"><?php echo xlt("Download") ?></th>
-                                        <th><?php echo xlt("View") ?></th>
+                                        <th class="twilio"><?php echo xlt("Reply") ?></th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -452,7 +454,7 @@ if (empty($logged_in) && $service == "1") {
                                         <th><?php echo xlt("From") ?></th>
                                         <th><?php echo xlt("To") ?></th>
                                         <th><?php echo xlt("Result") ?></th>
-                                        <th class="twilio"><?php echo xlt("Download") ?></th>
+                                        <th class="other"><?php echo xlt("Download") ?></th>
                                         <th class="ringcentral"><?php echo xlt("Message") ?></th>
                                         <th><?php echo xlt("View") ?></th>
                                     </tr>
