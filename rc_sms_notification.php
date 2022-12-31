@@ -1,16 +1,21 @@
 <?php
-////////////////////////////////////////////////////////////////////
-// Package: rc_sms_cron_notification
-// Purpose: to be run by cron every hour, look for appointments
-//      in the pre-notification period and send an sms reminder
-//
-// Created by:
-// Updated by:  Larry Lart on 11/03/2008
-// Updated by:  Jerry Padgett on 06/19/2018-2021
-// Rework of original
-////////////////////////////////////////////////////////////////////
-//hack add for command line version
+/**
+ * RC SMS Cron Notification
+ * 
+ * Run by cron every hour, look for appointments in pre-notification period and 
+ * send an SMS reminder
+ * 
+ * @author Unknown
+ * @author Larry Lart
+ * @author Jerry Padgett
+ * @author Robert Down
+ * @copyright Unknown
+ * @copyright Copyright (c) 2008 Larry Lart
+ * @copyright Copyright (c) 2018 Jerry Padgett
+ * @copyright Copyright (c) 2021 Robert Down <robertdown@live.com>
+ */
 
+//hack add for command line version
 use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 
 $_SERVER['REQUEST_URI'] = $_SERVER['PHP_SELF'];
@@ -90,7 +95,7 @@ flush();
 // for every event found
 $plast = '';
 echo "<h3>========================" . $TYPE . " | " . date("Y-m-d H:i:s") . "=========================</h3>";
-for ($p = 0, $pMax = count($db_patient); $p < $pMax; $p++) {
+for ($p = 0; $p < count($db_patient); $p++) {
     ob_flush();
     flush();
     $prow = $db_patient[$p];
@@ -128,6 +133,7 @@ for ($p = 0, $pMax = count($db_patient); $p < $pMax; $p++) {
                 $db_sms_msg['email_sender']
             );
         }
+
 
         if (!$isValid) {
             $strMsg .= "<strong style='color:red'>\n* INVALID Mobile Phone# " . $prow['phone_cell'] . " SMS NOT SENT</strong> Patient: " . $prow['fname'] . " " . $prow['lname'] . "</b>";
@@ -169,13 +175,17 @@ function isValidPhone($phone)
     }
 }
 
-// integrate cron functions into this script.
-// borrowed from cron_functions.php
-//
-////////////////////////////////////////////////////////////////////
-// Function:    cron_updateentry
-// Purpose: update status yes if alert send to patient
-////////////////////////////////////////////////////////////////////
+/**
+ * Integrate cron functions into this script
+ * 
+ * Borrowed from cron_functions.php. Update status yes if alert send to patient
+ *
+ * @param unknown $type
+ * @param int $pid
+ * @param int $pc_eid
+ * @param string $recur
+ * @return void
+ */
 function cron_updateentry($type, $pid, $pc_eid, $recur = '')
 {
     global $bTestRun;
@@ -196,11 +206,13 @@ function cron_updateentry($type, $pid, $pc_eid, $recur = '')
     $db_sql = sqlStatement($query, array($pid, $pc_eid));
 }
 
-////////////////////////////////////////////////////////////////////
-// Function:    cron_getAlertpatientData
-// Purpose: get patient data for send to alert
-////////////////////////////////////////////////////////////////////
-function cron_getAlertpatientData($type)
+/**
+ * Cron Get Alert Patient Data
+ * * 
+ * @param $type 
+ * @return array
+ */
+function cron_getAlertpatientData()
 {
     global $SMS_NOTIFICATION_HOUR, $EMAIL_NOTIFICATION_HOUR;
     $where = " AND (p.hipaa_allowsms='YES' AND p.phone_cell<>'' AND e.pc_sendalertsms != 'YES' AND e.pc_apptstatus != 'x')";
@@ -210,25 +222,31 @@ function cron_getAlertpatientData($type)
     return $patient_array;
 }
 
-////////////////////////////////////////////////////////////////////
-// Function:    cron_getNotificationData
-// Purpose: get alert notification data
-////////////////////////////////////////////////////////////////////
+/**
+ * Cron Get Notification Data
+ *
+ * @param string $type
+ * @return void
+ */
 function cron_getNotificationData($type)
 {
     $db_sms_msg['notification_id'] = '';
     $db_sms_msg['sms_gateway_type'] = '';
 
-    $query = "select * from automatic_notification where type='$type' ";
+    $query = "select * from automatic_notification where type=?";
     //echo "<br>".$query;
-    $db_sms_msg = sqlFetchArray(sqlStatement($query));
+    $db_sms_msg = sqlFetchArray(sqlStatement($query, [$type]));
     return $db_sms_msg;
 }
 
-////////////////////////////////////////////////////////////////////
-// Function:    cron_InsertNotificationLogEntry
-// Purpose: insert log entry in table
-////////////////////////////////////////////////////////////////////
+/**
+ * Cron Insert Notification Log Entry
+ *
+ * @param string $type
+ * @param array $prow
+ * @param array $db_sms_msg
+ * @return void
+ */
 function cron_InsertNotificationLogEntry($type, $prow, $db_sms_msg)
 {
     global $SMS_GATEWAY_USENAME, $SMS_GATEWAY_PASSWORD, $SMS_GATEWAY_APIKEY;
@@ -243,15 +261,18 @@ function cron_InsertNotificationLogEntry($type, $prow, $db_sms_msg)
     $sdate = date("Y-m-d H:i:s");
     $sql_loginsert = "INSERT INTO `notification_log` ( `iLogId` , `pid` , `pc_eid` , `sms_gateway_type` , `message` , `type` , `patient_info` , `smsgateway_info` , `pc_eventDate` , `pc_endDate` , `pc_startTime` , `pc_endTime` , `dSentDateTime` ) VALUES (NULL,?,?,?,?,?,?,?,?,?,?,?,?)";
 
-    $safe = array($prow[pid], $prow[pc_eid], $db_sms_msg[sms_gateway_type], $db_sms_msg[message], $db_sms_msg[type] || '', $patient_info, $smsgateway_info, $prow[pc_eventDate], $prow[pc_endDate], $prow[pc_startTime], $prow[pc_endTime], $sdate);
+    $safe = array($prow['pid'], $prow['pc_eid'], $db_sms_msg['sms_gateway_type'], $db_sms_msg['message'], $db_sms_msg['type'] || '', $patient_info, $smsgateway_info, $prow['pc_eventDate'], $prow['pc_endDate'], $prow['pc_startTime'], $prow['pc_endTime'], $sdate);
 
     $db_loginsert = sqlStatement($sql_loginsert, $safe);
 }
 
-////////////////////////////////////////////////////////////////////
-// Function:    cron_setmessage
-// Purpose: set the message
-////////////////////////////////////////////////////////////////////
+/**
+ * Cron Set Message
+ *
+ * @param array $prow
+ * @param array $db_sms_msg
+ * @return string
+ */
 function cron_setmessage($prow, $db_sms_msg)
 {
     // larry :: debug
@@ -272,10 +293,11 @@ function cron_setmessage($prow, $db_sms_msg)
     return $message;
 }
 
-////////////////////////////////////////////////////////////////////
-// Function:    cron_GetNotificationSettings
-// Purpose: get notification settings
-////////////////////////////////////////////////////////////////////
+/**
+ * Get Notification Settings
+ *
+ * @return void
+ */
 function cron_GetNotificationSettings()
 {
     $strQuery = "SELECT * FROM notification_settings WHERE type='SMS/Email Settings'";

@@ -36,6 +36,44 @@ class TwilioFaxClient extends AppDispatch
         parent::__construct();
     }
 
+    public function fetchSMSFilteredList($dateFrom, $dateTo)
+    {
+
+    }
+
+    public function fetchSMSList($uiDateRangeFlag = true)
+    {
+        return $this->_getPending($uiDateRangeFlag);
+    }
+
+    public function documoSendFax () {
+// Your DocuSign API credentials
+        $username = 'your_email@example.com';
+        $password = 'your_password';
+        $integratorKey = 'your_integrator_key';
+
+// Instantiate a new DocuSign client
+        $client = new DocuSign\Client\ApiClient();
+        $client->getConfig()->setHost('https://demo.docusign.net/restapi');
+
+// Login to DocuSign
+        $authApi = new DocuSign\Client\Api\AuthenticationApi($client);
+        $loginInfo = $authApi->login($username, $password, $integratorKey);
+        $client->setAccessToken($loginInfo->getAccessToken());
+
+// Set up the fax request
+        $faxRequest = new DocuSign\eSign\Model\FaxRequest();
+        $faxRequest->setFaxNumber('+15551234567');
+        $faxRequest->setDocumentName('fax.pdf');
+        $faxRequest->setDocumentUrl('https://www.example.com/fax.pdf');
+
+// Send the fax
+        $faxApi = new DocuSign\Client\Api\FaxApi($client);
+        $faxResults = $faxApi->createFaxRecipient($loginInfo->getAccountId(), $faxRequest);
+
+        echo "Fax sent! Fax ID: " . $faxResults->getFaxId();
+    }
+
     public function getCredentials()
     {
         $credentials = appDispatch::getSetup();
@@ -48,6 +86,26 @@ class TwilioFaxClient extends AppDispatch
         $this->uriDir = $this->serverUrl . $this->uriDir;
 
         return $credentials;
+    }
+
+    public function sendEmail () {
+        $email = new \SendGrid\Mail\Mail();
+        $email->setFrom("test@example.com", "Example User");
+        $email->setSubject("Sending with SendGrid is Fun");
+        $email->addTo("test@example.com", "Example User");
+        $email->addContent("text/plain", "and easy to do anywhere, even with PHP");
+        $email->addContent(
+            "text/html", "<strong>and easy to do anywhere, even with PHP</strong>"
+        );
+        $sendgrid = new \SendGrid(getenv('SENDGRID_API_KEY'));
+        try {
+            $response = $sendgrid->send($email);
+            print $response->statusCode() . "\n";
+            print_r($response->headers());
+            print $response->body() . "\n";
+        } catch (Exception $e) {
+            echo 'Caught exception: '. $e->getMessage() ."\n";
+        }
     }
 
     public function sendSMS($tophone = '', $subject = '', $message = '', $from = '')
@@ -63,8 +121,7 @@ class TwilioFaxClient extends AppDispatch
         $tophone = $this->formatPhone($tophone);
         try {
             $twilio = new Client($this->appKey, $this->appSecret, $this->sid);
-            $message = $twilio->messages
-                ->create(
+            $message = $twilio->messages->create(
                     $tophone,
                     array(
                         "body" => text($message),
@@ -196,7 +253,7 @@ class TwilioFaxClient extends AppDispatch
         return 1;
     }
 
-    public function getPending()
+    public function _getPending()
     {
         $dateFrom = $this->getRequest('datefrom');
         $dateTo = $this->getRequest('dateto');
@@ -215,10 +272,10 @@ class TwilioFaxClient extends AppDispatch
 
             try {
                 $twilio = new Client($this->appKey, $this->appSecret, $this->sid);
-                $faxes = $twilio->fax->v1->faxes->read(array(
-                    'dateCreatedAfter' => $dateFrom,
-                    'dateCreatedOnOrBefore' => $dateTo
-                ), 100);
+                $messages = $twilio->messages->read([
+                        "dateSentAfter" => $dateFrom,
+                        "dateSentBefore" => $dateTo
+                    ],100);
             } catch (Exception $e) {
                 $message = $e->getMessage();
                 $emsg = xlt('Ensure account credentials are correct.');
@@ -227,9 +284,9 @@ class TwilioFaxClient extends AppDispatch
 
             $responseMsgs = [];
             $responseMsgs[2] = xlt('Not Implemented');
-            foreach ($faxes as $messageStore) {
+            foreach ($messages as $messageStore) {
                 $id = $messageStore->sid;
-                $uri = $messageStore->mediaUrl;
+                $uri = $messageStore->uri;
                 $to = $messageStore->to;
                 $from = $messageStore->from;
                 $status = $messageStore->status;
@@ -258,9 +315,9 @@ class TwilioFaxClient extends AppDispatch
                 $updateDate =  date('M j Y g:i:sa T', $utc_time);
                 //$lastDate = $messageStore->dateCreated->format("M j Y g:i:s a");
                 if (strtolower($messageStore->direction) == "inbound") {
-                    $responseMsgs[0] .= "<tr><td>" . $lastDate . "</td><td>" . $lastDate . "</td><td>" . $messageStore->numPages . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><<td>" . $vUrl . "</td></tr>";
+                    $responseMsgs[0] .= "<tr><td>" . $updateDate . "</td><td>" . $messageStore->price . "</td><td>" . $messageStore->body . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><<td>" . $vUrl . "</td></tr>";
                 } else {
-                    $responseMsgs[1] .= "<tr><td>" . $lastDate . "</td><td>" . $updateDate . "</td><td>" . $messageStore->numPages . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><<td>" . $vUrl . "</td></tr>";
+                    $responseMsgs[1] .= "<tr><td>" . $updateDate . "</td><td>" . $messageStore->price . "</td><td>" . $messageStore->body . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><<td>" . $vUrl . "</td></tr>";
                 }
             }
         } catch (Exception $e) {

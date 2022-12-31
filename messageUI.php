@@ -90,9 +90,9 @@ if (empty($logged_in) && $service == "1") {
             var dateRange = new Date(new Date().setDate(new Date().getDate() - 7));
             $("#fromdate").val(dateRange.toJSON().slice(0, 10));
             $("#todate").val(new Date().toJSON().slice(0, 10));
-            if (currentService === '2') {
+            if (currentService == '2') {
                 $(".ringcentral").hide();
-            } else {
+            } else if (currentService == '1') {
                 $(".twilio").hide();
             }
             // populate
@@ -161,7 +161,7 @@ if (empty($logged_in) && $service == "1") {
 
         // For use with window cascade popup Twilio
         function viewDocument(e = '', docuri) {
-            //top.restoreSession();
+            top.restoreSession();
             if (e) {
                 e.preventDefault();
             }
@@ -203,14 +203,14 @@ if (empty($logged_in) && $service == "1") {
             if (e) {
                 e.preventDefault();
             }
-            let actionUrl = 'getPending';
+            let actionUrl = 'fetchSMSList';
             let id = pid;
             let datefrom = $('#fromdate').val();
             let dateto = $('#todate').val();
             let data = [];
             $("#brand").addClass('fa fa-spinner fa-spin');
             $("#rcvdetails tbody").empty();
-            $("#sentdetails tbody").empty();
+            $("#sent-details tbody").empty();
             $("#msgdetails tbody").empty();
             let Service = currentService;
             return $.post(actionUrl,
@@ -229,7 +229,7 @@ if (empty($logged_in) && $service == "1") {
                 }
                 // populate our panels
                 $("#rcvdetails tbody").empty().append(data[0]);
-                $("#sentdetails tbody").empty().append(data[1]);
+                $("#sent-details tbody").empty().append(data[1]);
                 $("#msgdetails tbody").empty().append(data[2]);
                 // get call logs
                 getLogs();
@@ -382,15 +382,15 @@ if (empty($logged_in) && $service == "1") {
                 <div id="dashboard" class="card">
                     <!-- Nav tabs -->
                     <ul id="tab-menu" class="nav nav-pills" role="tablist">
-                        <li class="nav-item" role="presentation"><a class="nav-link active" href="#received" aria-controls="received" role="tab" data-toggle="tab"><?php echo xlt("Received") ?></a></li>
-                        <li class="nav-item" role="presentation"><a class="nav-link" href="#sent" aria-controls="sent" role="tab" data-toggle="tab"><?php echo xlt("Sent") ?></a></li>
-                        <li class="nav-item ringcentral" role="presentation"><a class="nav-link" href="#messages" aria-controls="messages" role="tab" data-toggle="tab"><?php echo xlt("SMS Log") ?></a></li>
-                        <li class="nav-item ringcentral" role="presentation"><a class="nav-link" href="#logs" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Call Log") ?></a></li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" href="#alertlogs" aria-controls="alertlogs" role="tab" data-toggle="tab"><?php echo xlt("Notifications Log") ?><span class="fa fa-redo ml-1" onclick="getNotificationLog(event,this)"
+                        <li class="nav-item" role="tab"><a class="nav-link active" href="#received" aria-controls="received" role="tab" data-toggle="tab"><?php echo xlt("Received") ?></a></li>
+                        <li class="nav-item" role="tab"><a class="nav-link" href="#sent" aria-controls="sent" role="tab" data-toggle="tab"><?php echo xlt("Sent") ?></a></li>
+                        <li class="nav-item ringcentral" role="tab"><a class="nav-link" href="#messages" aria-controls="messages" role="tab" data-toggle="tab"><?php echo xlt("SMS Log") ?></a></li>
+                        <li class="nav-item ringcentral" role="tab"><a class="nav-link" href="#logs" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Call Log") ?></a></li>
+                        <li class="nav-item" role="tab">
+                            <a class="nav-link" href="#alertlogs" aria-controls="alertlogs" role="tab" data-toggle="tab"><?php echo xlt("Reminder Notifications Log") ?><span class="fa fa-redo ml-1" onclick="getNotificationLog(event,this)"
                                     title="<?php echo xla('Click to refresh using current date range. Refreshing just this tab.') ?>"></span></a>
                         </li>
-                        <li class="nav-item" role="presentation"><a class="nav-link" href="#upLoad" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Upload Fax") ?></a></li>
+                        <li class="nav-item" role="tab"><a class="nav-link" href="#upLoad" aria-controls="logs" role="tab" data-toggle="tab"><?php echo xlt("Upload Fax") ?></a></li>
                     </ul>
                     <!-- Tab panes -->
                     <div class="tab-content">
@@ -399,15 +399,15 @@ if (empty($logged_in) && $service == "1") {
                                 <table class="table table-sm table-striped" id="rcvdetails">
                                     <thead>
                                     <tr>
-                                        <th><?php echo xlt("Start Time") ?></th>
-                                        <th class="twilio"><?php echo xlt("End Time") ?></th>
+                                        <th><?php echo xlt("Time") ?></th>
+                                        <th class="twilio"><?php echo xlt("Type") ?></th>
                                         <th class="ringcentral"><?php echo xlt("Type") ?></th>
-                                        <th><?php echo xlt("Pages") ?></th>
+                                        <th><?php echo xlt("Message") ?></th>
                                         <th><?php echo xlt("From") ?></th>
                                         <th><?php echo xlt("To") ?></th>
                                         <th><?php echo xlt("Result") ?></th>
                                         <th class="ringcentral"><?php echo xlt("Download") ?></th>
-                                        <th><?php echo xlt("View") ?></th>
+                                        <th class="twilio"><?php echo xlt("View") ?></th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -420,13 +420,13 @@ if (empty($logged_in) && $service == "1") {
                         </div>
                         <div role="tabpanel" class="container-fluid tab-pane fade" id="sent">
                             <div class="table-responsive">
-                                <table class="table table-sm table-striped" id="sentdetails">
+                                <table class="table table-sm table-striped" id="sent-details">
                                     <thead>
                                     <tr>
                                         <th><?php echo xlt("Start Time") ?></th>
-                                        <th class="twilio"><?php echo xlt("End Time") ?></th>
+                                        <th class="twilio"><?php echo xlt("Price") ?></th>
                                         <th class="ringcentral"><?php echo xlt("Type") ?></th>
-                                        <th><?php echo xlt("Pages") ?></th>
+                                        <th><?php echo xlt("Message") ?></th>
                                         <th><?php echo xlt("From") ?></th>
                                         <th><?php echo xlt("To") ?></th>
                                         <th><?php echo xlt("Result") ?></th>
