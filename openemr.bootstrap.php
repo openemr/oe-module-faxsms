@@ -18,8 +18,10 @@ use OpenEMR\Events\PatientReport\PatientReportEvent;
 use OpenEMR\Events\Messaging\SendSmsEvent;
 use OpenEMR\Menu\MenuEvent;
 use OpenEMR\Services\Globals\GlobalSetting;
-use Symfony\Component\EventDispatcher\Event;
+use Symfony\Contracts\EventDispatcher\Event;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+
+$allowFax = ($GLOBALS['oefax_enable'] ?? null) != 2 && ($GLOBALS['oefax_enable'] ?? null) != 0;
 
 function oe_module_faxsms_add_menu_item(MenuEvent $event)
 {
@@ -56,11 +58,11 @@ function oe_module_faxsms_add_menu_item(MenuEvent $event)
 
 function createFaxModuleGlobals(GlobalsInitializedEvent $event)
 {
-    $select_array = array(0 => xl('Disabled'), 1 => xl('RingCentral'), 2 => xl('Twilio'));
+    $select_array = array(0 => xl('Disabled'), 1 => xl('RingCentral Fax and SMS'), 2 => xl('Twilio SMS Only'));
     $instruct = xl('Enable Fax SMS Support. Remember to setup credentials.');
 
     $event->getGlobalsService()->createSection("Modules", "Report");
-    $setting = new GlobalSetting(xl('Enable Fax SMS Module'), $select_array, 1, $instruct);
+    $setting = new GlobalSetting(xl('Enable Fax SMS Module'), $select_array, 2, $instruct);
     $event->getGlobalsService()->appendToSection("Modules", "oefax_enable", $setting);
 
     $instruct = xl('Enable Send SMS Support. Various opportunities in GUI.');
@@ -78,7 +80,7 @@ function oe_module_faxsms_patient_report_render_action_buttons(Event $event)
     <input type='hidden' name='fax' value='0'>
 <?php
 }
-function oe_module_faxsms_patient_report_render_javascript_post_load(Event $event)
+function oe_module_faxsms_patient_report_render_javascript_post_load(Event $event): void
 {
 ?>
 function getFaxContent() {
@@ -107,9 +109,10 @@ function getFaxContent() {
     $(".genfax").click(function() {getFaxContent();});
     <?php
 }
-$eventDispatcher->addListener(PatientReportEvent::ACTIONS_RENDER_POST, 'oe_module_faxsms_patient_report_render_action_buttons');
-$eventDispatcher->addListener(PatientReportEvent::JAVASCRIPT_READY_POST, 'oe_module_faxsms_patient_report_render_javascript_post_load');
-
+if ($allowFax) {
+    $eventDispatcher->addListener(PatientReportEvent::ACTIONS_RENDER_POST, 'oe_module_faxsms_patient_report_render_action_buttons');
+    $eventDispatcher->addListener(PatientReportEvent::JAVASCRIPT_READY_POST, 'oe_module_faxsms_patient_report_render_javascript_post_load');
+}
 // patient documents fax anchor
 function oe_module_faxsms_document_render_action_anchors(Event $event)
 {
@@ -132,18 +135,20 @@ function doFax(e, filePath, mime='') {
 }
 <?php
 }
-$eventDispatcher->addListener(PatientDocumentEvent::ACTIONS_RENDER_FAX_ANCHOR, 'oe_module_faxsms_document_render_action_anchors');
-$eventDispatcher->addListener(PatientDocumentEvent::JAVASCRIPT_READY_FAX_DIALOG, 'oe_module_faxsms_document_render_javascript_fax_dialog');
-
+if ($allowFax) {
+    $eventDispatcher->addListener(PatientDocumentEvent::ACTIONS_RENDER_FAX_ANCHOR, 'oe_module_faxsms_document_render_action_anchors');
+    $eventDispatcher->addListener(PatientDocumentEvent::JAVASCRIPT_READY_FAX_DIALOG, 'oe_module_faxsms_document_render_javascript_fax_dialog');
+}
 // send sms button
-function oe_module_faxsms_sms_render_action_buttons(Event $event)
+function oe_module_faxsms_sms_render_action_buttons(Event $event): void
 { ?>
-<button type="button" class="sendsms btn btn-secondary btn-sm btn-send-msg" onclick="sendSMS('');" value="true"><?php echo xlt('Send SMS'); ?></button>
+<button type="button" class="sendsms btn btn-secondary btn-sm btn-send-msg" onclick="sendSMS('');" value="true"><?php echo xlt('Notify'); ?></button>
 <?php
 }
-function oe_module_faxsms_sms_render_javascript_post_load(Event $event)
+
+function oe_module_faxsms_sms_render_javascript_post_load(Event $event): void
 { ?>
-function sendSMS(phone) {
+function sendSMS(phone = '') {
     let btnClose = <?php echo xlj("Cancel"); ?>;
     let title = <?php echo xlj("Send SMS Message"); ?>;
     let url = top.webroot_url + '/interface/modules/custom_modules/oe-module-faxsms/contact.php?isSMS=1&recipient=' + encodeURIComponent(phone);
@@ -161,7 +166,7 @@ $eventDispatcher->addListener(SendSmsEvent::JAVASCRIPT_READY_SMS_POST, 'oe_modul
 <?php
 // setup
 use OpenEMR\Events\Messaging\SendSmsEvent;
-$oesms = !empty($GLOBALS['oefax_enable']) && !empty($GLOBALS['oesms_send'])? 1 : 0;
+$oesms = !empty($GLOBALS['oefax_enable']) && !empty($GLOBALS['oesms_send']) ? 1 : 0;
 $smsSendDispatcher = $GLOBALS['kernel']->getEventDispatcher();
 //button
 if ($oesms) {

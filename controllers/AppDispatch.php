@@ -95,7 +95,7 @@ private function indexAction()
                 return new RCFaxClient();
                 break;
             case 2:
-                return new TwilioFaxClient();
+                return new TwilioSMSClient();
         }
     }
 
@@ -113,8 +113,7 @@ private function indexAction()
     public function getRequest($param = null, $default = null)
     {
         if ($param) {
-            return isset($this->_request[$param]) ?
-                $this->_request[$param] : $default;
+            return $this->_request[$param] ?? $default;
         }
 
         return $this->_request;
@@ -123,8 +122,7 @@ private function indexAction()
     public function getQuery($param = null, $default = null)
     {
         if ($param) {
-            return isset($this->_query[$param]) ?
-                $this->_query[$param] : $default;
+            return $this->_query[$param] ?? $default;
         }
 
         return $this->_query;
@@ -133,8 +131,7 @@ private function indexAction()
     public function getPost($param = null, $default = null)
     {
         if ($param) {
-            return isset($this->_post[$param]) ?
-                $this->_post[$param] : $default;
+            return $this->_post[$param] ?? $default;
         }
 
         return $this->_post;

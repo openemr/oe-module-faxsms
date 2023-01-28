@@ -17,7 +17,7 @@ use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 
 $clientApp = AppDispatch::getApiService();
 $service = $clientApp::getServiceType();
-$title = $service == "1" ? 'RingCentral' : 'Twilio';
+$title = $service == "1" ? xlt('RingCentral Fax SMS') : xlt('Twilio SMS');
 
 $logged_in = $clientApp->authenticate();
 if (empty($logged_in) && $service == "1") {
@@ -338,7 +338,7 @@ if (empty($logged_in) && $service == "1") {
     <nav class="navbar navbar-expand-xl navbar-light bg-light">
         <div class="container">
             <a class="navbar-brand" href="#">
-                <?php echo "Fax SMS ($title)"; ?>
+                <?php echo $title; ?>
             </a>
             <button type="button" class="bg-primary navbar-toggler mr-auto" data-toggle="collapse" data-target="#nav-header-collapse">
                 <span class="navbar-toggler-icon"></span>
