@@ -19,6 +19,8 @@ use OpenEMR\Core\Header;
 $clientApp = AppDispatch::getApiService();
 $logged_in = $clientApp->authenticate();
 $isSMS = $clientApp->getRequest('isSMS', 0);
+$default_message = '';
+$interface_pid = null;
 if (empty($isSMS)) {
     $the_file = $clientApp->getRequest('file');
     $isContent = $clientApp->getRequest('isContent');
@@ -27,7 +29,14 @@ if (empty($isSMS)) {
     $file_name = pathinfo($the_file, PATHINFO_BASENAME);
     $file_mime = $clientApp->getRequest('mime');
 } else {
-    $recipient_phone = $clientApp->getRequest('recipient');
+    $interface_pid = $clientApp->getRequest('pid');
+    $doc_name = $clientApp->getRequest('title');
+    $portal_url = $GLOBALS['portal_onsite_two_address'];
+    $details = json_decode($clientApp->getRequest('details', []), true);
+    $recipient_phone = $clientApp->getRequest('recipient') ?? $details['phone'];
+    $default_message = xlt("The following document") . ": " . text($doc_name) . " " . xlt("is available to be completed at") . " " . text($portal_url);
+    $default_message .= " " . xlt("Reply END to prevent further notifications from portal.");
+    $pid = $interface_pid ?: $pid;
 }
 
 $service = $clientApp::getServiceType();
@@ -151,12 +160,16 @@ $service = $clientApp::getServiceType();
                 <div class="col-md-12">
                     <div class="form-group">
                         <label for="form_name"><?php echo xlt('Firstname') ?></label>
-                        <input id="form_name" type="text" name="name" class="form-control" placeholder="<?php echo xla('Not Required') ?>">
+                        <input id="form_name" type="text" name="name" class="form-control"
+                            placeholder="<?php echo xla('Not Required') ?>"
+                            value="<?php echo attr($details['fname'] ?? '') ?>" />
                         <div class="help-block with-errors"></div>
                     </div>
                     <div class="form-group">
                         <label for="form_lastname"><?php echo xlt('Lastname') ?></label>
-                        <input id="form_lastname" type="text" name="surname" class="form-control" placeholder="<?php echo xla('Not Required') ?>">
+                        <input id="form_lastname" type="text" name="surname" class="form-control"
+                            placeholder="<?php echo xla('Not Required') ?>"
+                            value="<?php echo attr($details['lname'] ?? '') ?>" />
                         <div class="help-block with-errors"></div>
                     </div>
                     <div class="form-group smsExclude">
@@ -167,14 +180,16 @@ $service = $clientApp::getServiceType();
                     </div>
                     <div class="form-group">
                         <label for="form_phone"><?php echo xlt('Recipient Phone') ?> *</label>
-                        <input id="form_phone" type="tel" name="phone" class="form-control" required="required" placeholder="<?php echo xla('Phone number of recipient') ?>">
+                        <input id="form_phone" type="tel" name="phone" class="form-control" required="required"
+                            placeholder="<?php echo xla('Phone number of recipient') ?>"
+                            value="" />
                         <div class="help-block with-errors"></div>
                     </div>
                     <?php if ($service != "2" || !empty($isSMS)) { ?>
                         <div class="form-group">
                             <label for="form_message"><?php echo xlt('Message') ?></label>
                             <textarea id="form_message" name="comments" class="form-control" placeholder="
-                            <?php echo empty($isSMS) ? xla('Comment for cover sheet.') : xla('SMS text message.') ?>" rows="3"></textarea>
+                            <?php echo empty($isSMS) ? xla('Comment for cover sheet.') : xla('SMS text message.') ?>" rows="6"><?php echo $default_message; ?></textarea>
                             <div class="help-block with-errors"></div>
                         </div>
                     <?php } ?>

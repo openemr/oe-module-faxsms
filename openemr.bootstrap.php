@@ -141,18 +141,27 @@ if ($allowFax) {
 }
 // send sms button
 function oe_module_faxsms_sms_render_action_buttons(Event $event): void
-{ ?>
-<button type="button" class="sendsms btn btn-secondary btn-sm btn-send-msg" onclick="sendSMS('');" value="true"><?php echo xlt('Notify'); ?></button>
+{
+    if (!$event->smsAuthorised) {
+        return;
+    }
+?>
+<button type="button" class="sendsms btn btn-primary btn-sm btn-send-msg"
+    onclick="sendSMS(<?php echo attr_js($event->pid) ?>, <?php echo attr_js($event->title) ?>, <?php echo attr_js($event->getPatientDetails(null, true)) ?>);" value="true"><?php echo xlt('Notify'); ?></button>
 <?php
 }
 
 function oe_module_faxsms_sms_render_javascript_post_load(Event $event): void
-{ ?>
-function sendSMS(phone = '') {
+{
+?>
+function sendSMS(pid, docName, details) {
     let btnClose = <?php echo xlj("Cancel"); ?>;
     let title = <?php echo xlj("Send SMS Message"); ?>;
-    let url = top.webroot_url + '/interface/modules/custom_modules/oe-module-faxsms/contact.php?isSMS=1&recipient=' + encodeURIComponent(phone);
-    dlgopen(url, '', 'modal-md', 600, '', title, {
+    let url = top.webroot_url + '/interface/modules/custom_modules/oe-module-faxsms/contact.php?isSMS=1&pid=' +
+    encodeURIComponent(pid) +
+    '&title=' + encodeURIComponent(docName) +
+    '&details=' + encodeURIComponent(details);
+    dlgopen(url, '', 'modal-sm', 700, '', title, {
         buttons: [{text: btnClose, close: true, style: 'secondary'}]
     });
 }
