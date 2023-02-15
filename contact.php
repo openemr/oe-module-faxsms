@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Fax SMS Module Member
  *
@@ -12,11 +13,13 @@
 $sessionAllowWrite = true;
 require_once(__DIR__ . "/../../../globals.php");
 
-use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 use OpenEMR\Core\Header;
+use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 
+$serviceType = $_REQUEST['type'] ?? '';
+AppDispatch::setModuleType($serviceType);
 // kick off app endpoints controller
-$clientApp = AppDispatch::getApiService();
+$clientApp = AppDispatch::getApiService($serviceType);
 $logged_in = $clientApp->authenticate();
 $isSMS = $clientApp->getRequest('isSMS', 0);
 $default_message = '';
@@ -51,7 +54,7 @@ $service = $clientApp::getServiceType();
     echo "<script>var pid=" . js_escape($pid) . ";var isSms=" . js_escape($isSMS) . ";var recipient=" . js_escape($recipient_phone) . ";</script>";
     ?>
     <?php if (!empty($GLOBALS['text_templates_enabled'])) { ?>
-    <script src="<?php echo $GLOBALS['web_root'] ?>/library/js/CustomTemplateLoader.js"></script>
+        <script src="<?php echo $GLOBALS['web_root'] ?>/library/js/CustomTemplateLoader.js"></script>
     <?php } ?>
     <script>
         $(function () {
@@ -60,12 +63,14 @@ $service = $clientApp::getServiceType();
                 //$("#form_name").val();
                 //$("#form_lastname").val();
                 $("#form_phone").val(recipient);
+            } else {
+                $(".faxExclude").addClass("d-none");
             }
             // when the form is submitted
             $('#contact-form').on('submit', function (e) {
                 if (!e.isDefaultPrevented()) {
                     let wait = '<i class="fa fa-cog fa-spin fa-4x"></i>';
-                    let url = 'sendFax';
+                    let url = 'sendFax?type=fax';
                     if (isSms) {
                         url = 'sendSMS';
                     }
@@ -97,7 +102,7 @@ $service = $clientApp::getServiceType();
                                         dlgclose();
                                     }
                                     // if error let user close dialog for time to read error message.
-                                }, 2000);
+                                }, 5000);
                             }
                         }
                     });
@@ -111,20 +116,24 @@ $service = $clientApp::getServiceType();
         }
 
         function setpatient(pid, lname, fname, dob) {
-            $("#form_patient").val(fname+" "+lname);
-            $("#form_patient_id").val(fname+""+pid);
+            $("#form_patient").val(fname + " " + lname);
+            $("#form_patient_id").val(fname + "" + pid);
             $("#form_pid").val(pid);
         }
 
         function contactCallBack(contact) {
             let actionUrl = 'getUser';
-            return $.post(actionUrl, {'uid': contact}, function (d, s) {
+            return $.post(actionUrl, {
+                'uid': contact,
+                'type': <?php echo js_url($serviceType); ?>
+            }, function (d, s) {
                 //$("#wait").remove()
-            }, 'json').done(function (data) {
-                $("#form_name").val(data[0]);
-                $("#form_lastname").val(data[1]);
-                $("#form_phone").val(data[2]);
-            });
+            }, 'json').done(
+                function (data) {
+                    $("#form_name").val(data[0]);
+                    $("#form_lastname").val(data[1]);
+                    $("#form_phone").val(data[2]);
+                });
         }
 
         const getContactBook = function (e, rtnpid) {
@@ -134,16 +143,16 @@ $service = $clientApp::getServiceType();
                 buttons: [
                     {text: btnClose, close: true, style: 'primary  btn-sm'}
                 ],
-                url: top.webroot_url + '/interface/usergroup/addrbook_list.php?popup=2',
+                url: top.webroot_url + '/interface/usergroup/addrbook_list.php?popup=2&type=' + encodeURIComponent(<?php echo js_url($serviceType); ?>),
                 dialogId: 'fax'
             });
         };
     </script>
     <style>
-        .panel-body {
-            word-wrap: break-word;
-            overflow: hidden;
-        }
+      .panel-body {
+        word-wrap: break-word;
+        overflow: hidden;
+      }
     </style>
 </head>
 <body>
@@ -158,14 +167,14 @@ $service = $clientApp::getServiceType();
             <div class="messages"></div>
             <div class="row">
                 <div class="col-md-12">
-                    <div class="form-group">
+                    <div class="form-group faxExclude">
                         <label for="form_name"><?php echo xlt('Firstname') ?></label>
                         <input id="form_name" type="text" name="name" class="form-control"
                             placeholder="<?php echo xla('Not Required') ?>"
                             value="<?php echo attr($details['fname'] ?? '') ?>" />
                         <div class="help-block with-errors"></div>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group faxExclude">
                         <label for="form_lastname"><?php echo xlt('Lastname') ?></label>
                         <input id="form_lastname" type="text" name="surname" class="form-control"
                             placeholder="<?php echo xla('Not Required') ?>"
@@ -199,8 +208,8 @@ $service = $clientApp::getServiceType();
                     <div>
                         <button type="button" class="btn btn-primary" onclick="getContactBook(event, pid)" value="Contacts"><?php echo xlt('Contacts') ?></button>
                         <!-- patient picker ready once get patient info is added. -->
-                        <!--<button type="button" class="btn btn-primary" onclick="sel_patient()" value="Patients"><?php /*echo xlt('Patients') */?></button>-->
-                        <button type="submit" class="btn btn-success float-right" value=""><?php echo empty($isSMS) ? xlt('Send Fax') : xlt('Send SMS')?></button>
+                        <!--<button type="button" class="btn btn-primary" onclick="sel_patient()" value="Patients"><?php /*echo xlt('Patients') */ ?></button>-->
+                        <button type="submit" class="btn btn-success float-right" value=""><?php echo empty($isSMS) ? xlt('Send Fax') : xlt('Send SMS') ?></button>
                     </div>
                 </div>
             </div>

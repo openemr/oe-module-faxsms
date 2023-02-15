@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Fax SMS Module Member
  *
@@ -171,7 +172,7 @@ class RCFaxClient extends AppDispatch
         // sendFax, will do an auth check first using this
         // token data array. Session storage token is very
         // unreliable and hardly ever accepted. Still, we try...
-        $session_token = $this->getSession('sessionAccessToken');
+        $session_token = $_SESSION['sessionAccessToken'];
         if (!empty($cachedAuth["refresh_token"])) {
             // probably new openemr session or user!
             $this->platform->auth()->setData($cachedAuth);
@@ -554,7 +555,7 @@ class RCFaxClient extends AppDispatch
                         $aUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','$id','true')>" . $id . " <span class='fa fa-download'></span></a></br>";
                         $vUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','$id','false')> <span class='fa fa-file-pdf'></span></a></br>";
 
-                        $utc_time = strtotime($messageStore->lastModifiedTime .' UTC');
+                        $utc_time = strtotime($messageStore->lastModifiedTime . ' UTC');
                         $updateDate =  date('M j Y g:i:sa T', $utc_time);
 
                         if (strtolower($messageStore->type) === "sms") {

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Twilio Fax SMS Controller
  *
@@ -16,7 +17,7 @@ use Exception;
 use OpenEMR\Common\Crypto\CryptoGen;
 use Twilio\Rest\Client;
 
-class TwilioFaxClient extends AppDispatch
+class TwilioSMSClient extends AppDispatch
 {
     public $baseDir;
     public $uriDir;
@@ -38,40 +39,11 @@ class TwilioFaxClient extends AppDispatch
 
     public function fetchSMSFilteredList($dateFrom, $dateTo)
     {
-
     }
 
     public function fetchSMSList($uiDateRangeFlag = true)
     {
         return $this->_getPending($uiDateRangeFlag);
-    }
-
-    public function documoSendFax () {
-// Your DocuSign API credentials
-        $username = 'your_email@example.com';
-        $password = 'your_password';
-        $integratorKey = 'your_integrator_key';
-
-// Instantiate a new DocuSign client
-        $client = new DocuSign\Client\ApiClient();
-        $client->getConfig()->setHost('https://demo.docusign.net/restapi');
-
-// Login to DocuSign
-        $authApi = new DocuSign\Client\Api\AuthenticationApi($client);
-        $loginInfo = $authApi->login($username, $password, $integratorKey);
-        $client->setAccessToken($loginInfo->getAccessToken());
-
-// Set up the fax request
-        $faxRequest = new DocuSign\eSign\Model\FaxRequest();
-        $faxRequest->setFaxNumber('+15551234567');
-        $faxRequest->setDocumentName('fax.pdf');
-        $faxRequest->setDocumentUrl('https://www.example.com/fax.pdf');
-
-// Send the fax
-        $faxApi = new DocuSign\Client\Api\FaxApi($client);
-        $faxResults = $faxApi->createFaxRecipient($loginInfo->getAccountId(), $faxRequest);
-
-        echo "Fax sent! Fax ID: " . $faxResults->getFaxId();
     }
 
     public function getCredentials()
@@ -88,26 +60,6 @@ class TwilioFaxClient extends AppDispatch
         return $credentials;
     }
 
-    public function sendEmail () {
-        $email = new \SendGrid\Mail\Mail();
-        $email->setFrom("test@example.com", "Example User");
-        $email->setSubject("Sending with SendGrid is Fun");
-        $email->addTo("test@example.com", "Example User");
-        $email->addContent("text/plain", "and easy to do anywhere, even with PHP");
-        $email->addContent(
-            "text/html", "<strong>and easy to do anywhere, even with PHP</strong>"
-        );
-        $sendgrid = new \SendGrid(getenv('SENDGRID_API_KEY'));
-        try {
-            $response = $sendgrid->send($email);
-            print $response->statusCode() . "\n";
-            print_r($response->headers());
-            print $response->body() . "\n";
-        } catch (Exception $e) {
-            echo 'Caught exception: '. $e->getMessage() ."\n";
-        }
-    }
-
     public function sendSMS($tophone = '', $subject = '', $message = '', $from = '')
     {
         $tophone = $tophone ?: $this->getRequest('phone');
@@ -122,12 +74,12 @@ class TwilioFaxClient extends AppDispatch
         try {
             $twilio = new Client($this->appKey, $this->appSecret, $this->sid);
             $message = $twilio->messages->create(
-                    $tophone,
-                    array(
+                $tophone,
+                array(
                         "body" => text($message),
                         "from" => attr($from)
                     )
-                );
+            );
         } catch (Exception $e) {
             $message = $e->getMessage();
             return 'Error: ' . $message;
@@ -172,81 +124,13 @@ class TwilioFaxClient extends AppDispatch
         return $filepath;
     }
 
-    public function sendFax()
-    {
-        if (!$this->authenticate()) {
-            return xlt('Error: Authentication Service Denies Access.');
-        }
-        $isContent = $this->getRequest('isContent');
-        $file = $this->getRequest('file');
-        $mime = $this->getRequest('mime');
-        $phone = $this->getRequest('phone');
-        $isDocuments = $this->getRequest('isDocuments');
-        $isQueue = $this->getRequest('isQueue');
-        $comments = $this->getRequest('comments');
-        $content = '';
-        $phone = $this->formatPhone($phone);
-        $from = $this->formatPhone($this->credentials['smsNumber']);
-
-        $file = str_replace("file://", '', $file);
-        $file = str_replace("\\", "/", realpath($file)); // normalize requested path
-        if (!$file) {
-            return xlt('Error: no content');
-        }
-        if ($isContent) {
-            $content = $file;
-            $file = 'report_' . $GLOBALS['pid'] . '.pdf';
-        } elseif (!$isQueue) {
-            $content = file_get_contents($file);
-            if (!$isDocuments) {
-                unlink($file);
-            }
-        }
-
-        ['basename' => $basename, 'dirname' => $dirname] = pathinfo($file);
-        if ($this->crypto->cryptCheckStandard($content)) {
-            $content = $this->crypto->decryptStandard($content, null, 'database');
-        }
-
-        $type = \GuzzleHttp\Psr7\MimeType::fromFilename($basename);
-        if (empty($type)) {
-            $basename .= ".pdf";
-        }
-        if ($content) {
-            $tmpPath = $this->baseDir . '/send/' . $basename;
-            file_put_contents($tmpPath, $content);
-        }
-
-        // api rest call to fax server to verify twilio request signature and stream file
-        $faxfile = $this->serverUrl . $GLOBALS['webroot'] .
-            '/interface/modules/custom_modules/oe-module-faxsms/faxserver/serveFax?site=' . $this->getSession('site_id') .
-            '&file=' . urlencode($basename);
-        // callback on completion of fax send
-        $callbackUrl = $this->serverUrl . $GLOBALS['webroot'] .
-            '/interface/modules/custom_modules/oe-module-faxsms/faxserver/faxCallback?site=' . $this->getSession('site_id');
-
-        try {
-            $twilio = new Client($this->appKey, $this->appSecret, $this->sid);
-            $fax = $twilio->fax->v1->faxes->create(
-                $phone,
-                $faxfile,
-                array("from" => $from, 'statusCallback' => $callbackUrl)
-            );
-        } catch (Exception $e) {
-            $message = $e->getMessage();
-            return 'Error: ' . $message;
-        }
-
-        return xlt('Send Successful');
-    }
-
     public function authenticate($action_flg = null): int
     {
         // did construct happen...
         if (empty($this->credentials)) {
             $this->credentials = $this->getCredentials();
         }
-        if(!$this->sid || !$this->appKey || !$this->appSecret) {
+        if (!$this->sid || !$this->appKey || !$this->appSecret) {
             return 0;
         }
 
@@ -275,7 +159,7 @@ class TwilioFaxClient extends AppDispatch
                 $messages = $twilio->messages->read([
                         "dateSentAfter" => $dateFrom,
                         "dateSentBefore" => $dateTo
-                    ],100);
+                    ], 100);
             } catch (Exception $e) {
                 $message = $e->getMessage();
                 $emsg = xlt('Ensure account credentials are correct.');
@@ -296,25 +180,25 @@ class TwilioFaxClient extends AppDispatch
                     $d2 = new DateTime(gmdate('Ymd Hi', time()));
                     $dif = $d1->diff($d2);
                     $interval = ($dif->d * 24) + $dif->h;
-                    if ($interval >= 12 && ($status != 'delivered' && $status != 'received')) {
+                    /*if ($interval >= 12 && ($status != 'delivered' && $status != 'received')) {
                         $f = $twilio->fax->v1->faxes($id)->delete();
                     } elseif ($interval >= 48) {
                         $f = $twilio->fax->v1->faxes($id)->delete();
-                    }
+                    }*/
                 }
-                if($status != 'failed') {
+                if ($status != 'failed') {
                     $vUrl = "<a href='#' onclick=viewDocument(" . "event,'$uri','${id}','false')> <span class='fa fa-file-pdf'></span></a></br>";
                 } else {
-                    $vUrl = "<a href='#' title='Fax not saved to server because of failure'> <span class='fa fa-file-pdf text-danger'></span></a></br>";
+                    $vUrl = "<a href='#' title='SMS failure'> <span class='fa fa-file-pdf text-danger'></span></a></br>";
                 }
 
                 //date_default_timezone_set('America/New_York'); // hope server sets tz.
-                $utc_time = strtotime($messageStore->dateCreated->format('Ymd His').' UTC');
+                $utc_time = strtotime($messageStore->dateCreated->format('Ymd His') . ' UTC');
                 $lastDate =  date('M j Y g:i:sa T', $utc_time);
-                $utc_time = strtotime($messageStore->dateUpdated->format('Ymd His').' UTC');
+                $utc_time = strtotime($messageStore->dateUpdated->format('Ymd His') . ' UTC');
                 $updateDate =  date('M j Y g:i:sa T', $utc_time);
                 //$lastDate = $messageStore->dateCreated->format("M j Y g:i:s a");
-                if (strtolower($messageStore->direction) == "inbound") {
+                if (strtolower($messageStore->direction) != "outbound-api") {
                     $responseMsgs[0] .= "<tr><td>" . $updateDate . "</td><td>" . $messageStore->price . "</td><td>" . $messageStore->body . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><<td>" . $vUrl . "</td></tr>";
                 } else {
                     $responseMsgs[1] .= "<tr><td>" . $updateDate . "</td><td>" . $messageStore->price . "</td><td>" . $messageStore->body . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><<td>" . $vUrl . "</td></tr>";
@@ -395,5 +279,13 @@ class TwilioFaxClient extends AppDispatch
         }
 
         return null;
+    }
+
+    /**
+     * @return mixed
+     */
+    function sendFax()
+    {
+        // TODO: Implement sendFax() method.
     }
 }

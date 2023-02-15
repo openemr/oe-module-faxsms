@@ -15,7 +15,7 @@
     ],
     "minimum-stability": "stable",
     "autoload": {
-        "psr-4": {"OpenEMR\\Modules\\FaxSMS\\Controllers\\": "controllers/"}
+        "psr-4": {"OpenEMR\\Modules\\FaxSMS\\": "src/"}
     },
     "require": {
         "openemr/oe-module-installer-plugin": "^0.1.0",
@@ -28,6 +28,9 @@
     "config": {
         "replace": {
             "pubnub/pubnub": "*"
+        },
+        "allow-plugins": {
+            "openemr/oe-module-installer-plugin": true
         }
    },
     "conflict": {

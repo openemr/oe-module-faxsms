@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Fax SMS Module Member
  *
@@ -14,4 +15,6 @@ require_once(__DIR__ . "/../../../globals.php");
 
 use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 
-AppDispatch::getApiService();
+$serviceType = $_REQUEST['type'] ?? '';
+AppDispatch::setModuleType($serviceType);
+AppDispatch::getApiService($serviceType);

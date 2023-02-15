@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Fax SMS Module Member
  *
@@ -25,7 +26,7 @@ function processCode()
     $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
     $authUser = 0;
     $credentials = sqlQuery("SELECT * FROM `module_faxsms_credentials` WHERE `auth_user` = ? AND `vendor` = ?", array($authUser, $vendor))['credentials'];
-    if(empty($credentials)) {
+    if (empty($credentials)) {
         echo xlt("Applications credentials were not found. Please setup account.");
         die('Credential Error');
     }
