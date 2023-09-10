@@ -1,10 +1,11 @@
 <?php
+
 /**
  * RC SMS Cron Notification
- * 
- * Run by cron every hour, look for appointments in pre-notification period and 
+ *
+ * Run by cron every hour, look for appointments in pre-notification period and
  * send an SMS reminder
- * 
+ *
  * @author Unknown
  * @author Larry Lart
  * @author Jerry Padgett
@@ -39,7 +40,8 @@ if (php_sapi_name() === 'cli') {
 require_once(__DIR__ . "/../../../globals.php");
 require_once("$srcdir/appointments.inc.php");
 
-$clientApp = AppDispatch::getApiService();
+AppDispatch::setModuleType('sms');
+$clientApp = AppDispatch::getApiService('sms');
 
 session_write_close();
 set_time_limit(0);
@@ -177,7 +179,7 @@ function isValidPhone($phone)
 
 /**
  * Integrate cron functions into this script
- * 
+ *
  * Borrowed from cron_functions.php. Update status yes if alert send to patient
  *
  * @param unknown $type
@@ -208,8 +210,8 @@ function cron_updateentry($type, $pid, $pc_eid, $recur = '')
 
 /**
  * Cron Get Alert Patient Data
- * * 
- * @param $type 
+ * *
+ * @param $type
  * @return array
  */
 function cron_getAlertpatientData()

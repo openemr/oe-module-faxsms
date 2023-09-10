@@ -15,22 +15,25 @@
     ],
     "minimum-stability": "stable",
     "autoload": {
-        "psr-4": {"OpenEMR\\Modules\\FaxSMS\\Controllers\\": "controllers/"}
+        "psr-4": {"OpenEMR\\Modules\\FaxSMS\\": "src/"}
     },
     "require": {
         "openemr/oe-module-installer-plugin": "^0.1.0",
     	"ext-curl": "*",
     	"ext-json": "*",
-    	"php": "^7.1",
-        "ringcentral/ringcentral-php": "2.2.3",
-        "twilio/sdk": "5.34.4"
+    	"php": "^8.0",
+        "ringcentral/ringcentral-php": "2.2.5",
+        "twilio/sdk": "6.44.0"
     },
     "config": {
         "replace": {
             "pubnub/pubnub": "*"
+        },
+        "allow-plugins": {
+            "openemr/oe-module-installer-plugin": true
         }
    },
     "conflict": {
-        "openemr/openemr": ">=5.0.3"
+        "openemr/openemr": "<7.0.0"
     }
 }
