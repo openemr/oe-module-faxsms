@@ -1,24 +1,27 @@
 <?php
+
 /**
  * Fax SMS Module Member
  *
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2018-2022 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
+
 require_once(__DIR__ . "/../../../globals.php");
 
-use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 use OpenEMR\Core\Header;
+use OpenEMR\Modules\FaxSMS\Controllers\AppDispatch;
 
+$serviceType = $_REQUEST['type'] ?? '';
+AppDispatch::setModuleType($serviceType);
 // kick off app endpoints controller
-$clientApp = AppDispatch::getApiService();
+$clientApp = AppDispatch::getApiService($serviceType);
 $service = $clientApp::getServiceType();
 $c = $clientApp->getCredentials();
 
-echo "<script>var pid=" . js_escape($pid) . "</script>";
 ?>
 <!DOCTYPE html>
 <html>
@@ -26,7 +29,7 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
     <title>Setup</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <?php Header::setupHeader();
-    echo "<script>var Service=" . js_escape($service) . ";</script>";
+    echo "<script>let currentService=" . js_escape($service) . "</script>";
     ?>
     <script>
         $(function () {
@@ -34,10 +37,10 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                 if (!e.isDefaultPrevented()) {
                     $(window).scrollTop(0);
                     let wait = '<i class="fa fa-cog fa-spin fa-4x"></i>';
-                    let url = 'saveSetup';
+                    let actionUrl = 'saveSetup?type=' + encodeURIComponent(<?php echo js_escape($serviceType) ?>);
                     $.ajax({
                         type: "POST",
-                        url: url,
+                        url: actionUrl,
                         data: $(this).serialize(),
                         success: function (data) {
                             var err = (data.search(/Exception/) !== -1 ? 1 : 0);
@@ -53,7 +56,7 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                                 $('#setup-form').find('.messages').html(alertBox);
                                 if (!err) {
                                     // empty the form
-                                    $('#setup-form')[0].reset();
+                                    //$('#setup-form')[0].reset();
                                     setTimeout(function () {
                                         $('#setup-form').find('.messages').remove();
                                         <?php if (!$module_config) { ?>
@@ -69,10 +72,17 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                     return false;
                 }
             });
-            if (Service === '2') {
+
+            if (currentService == '2') {
                 $(".ringcentral").hide();
-            } else {
+                $(".etherfax").hide();
+            } else if (currentService == '1') {
                 $(".twilio").hide();
+                $(".etherfax").hide();
+            } else if (currentService == '3') {
+                $(".twilio").hide();
+                $(".ringcentral").hide();
+                $(".etherfax").show();
             }
         });
     </script>
@@ -80,21 +90,50 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
 <body>
     <div class="container-fluid">
         <?php if ($module_config) { ?>
-            <h4>Setup Credentials</h4>
+            <h4><?php echo xlt("Setup Credentials") ?></h4>
         <?php } ?>
         <form class="form" id="setup-form" role="form">
             <div class="messages"></div>
             <div class="row">
-                <div class="col-md-12">
-                    <div class="checkbox">
-                        <label>
-                            <input id="form_production" type="checkbox" name="production" <?php echo attr($c['production']) ? ' checked' : '' ?>>
-                            <?php echo xlt("Production Check") ?>
-                        </label>
-                    </div>
-                    <div class="col-md-6">
+                <div class="col">
+                    <?php if ($service == '3') { ?>
+                        <div class="checkbox">
+                            <label>
+                                <input id="form_production" type="checkbox" name="production" <?php echo attr($c['production']) ? ' checked' : '' ?>>
+                                <?php echo xlt("Production Check") ?>
+                            </label>
+                        </div>
                         <div class="form-group">
-                            <label for="form_username"><?php echo xlt("Username, Phone or Account Sid") ?> *</label>
+                            <label for="form_username"><?php echo xlt("Account Id") ?> *</label>
+                            <input id="form_username" type="text" name="account" class="form-control" value='<?php echo attr($c['account']) ?>'>
+                        </div>
+                        <div class="form-group">
+                            <label for="form_username"><?php echo xlt("Account Username") ?> *</label>
+                            <input id="form_username" type="text" name="username" class="form-control"
+                                required="required" value='<?php echo attr($c['username']) ?>'>
+                        </div>
+                        <div class="form-group">
+                            <label for="form_password"><?php echo xlt("Account Password") ?> *</label>
+                            <input id="form_password" type="password" name="password" class="form-control"
+                                required="required" value='<?php echo attr($c['password']) ?>'>
+                        </div>
+                        <div class="form-group">
+                            <label for="form_extension"><?php echo xlt("Phone Number") ?></label>
+                            <input id="form_extension" type="text" name="phone" class="form-control" value='<?php echo attr($c['phone']) ?>'>
+                        </div>
+                        <div class="form-group">
+                            <label for="form_key"><?php echo xlt("API Key") ?></label>
+                            <input id="form_key" type="password" name="key" class="form-control" value='<?php echo attr($c['appKey']) ?>'>
+                        </div>
+                    <?php } else { ?>
+                        <div class="checkbox">
+                            <label>
+                                <input id="form_production" type="checkbox" name="production" <?php echo attr($c['production']) ? ' checked' : '' ?>>
+                                <?php echo xlt("Production Check") ?>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="form_username"><?php echo xlt("RC Username, Phone or Twilio Account Sid") ?> *</label>
                             <input id="form_username" type="text" name="username" class="form-control"
                                 required="required" value='<?php echo attr($c['username']) ?>'>
                         </div>
@@ -104,7 +143,7 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                                 required="required" value='<?php echo attr($c['extension']) ?>'>
                         </div>
                         <div class="form-group">
-                            <label for="form_password"><?php echo xlt("Password or Auth Token") ?> *</label>
+                            <label for="form_password"><?php echo xlt("RC Password or Twilio Auth Token") ?> *</label>
                             <input id="form_password" type="text" name="password" class="form-control"
                                 required="required" value='<?php echo attr($c['password']) ?>'>
                         </div>
@@ -113,15 +152,13 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                             <input id="form_smsnumber" type="text" name="smsnumber" class="form-control"
                                 value='<?php echo attr($c['smsNumber']) ?>'>
                         </div>
-                    </div>
-                    <div class="col-md-6">
                         <div class="form-group">
-                            <label for="form_key"><?php echo xlt("Client ID") ?> *</label>
+                            <label for="form_key"><?php echo xlt("RC Client ID or Twilio Api Sid") ?> *</label>
                             <input id="form_key" type="text" name="key" class="form-control"
                                 required="required" value='<?php echo attr($c['appKey']) ?>'>
                         </div>
                         <div class="form-group">
-                            <label for="form_secret"><?php echo xlt("Client Secret") ?> *</label>
+                            <label for="form_secret"><?php echo xlt("RC Client Secret or Twilio Api Secret") ?> *</label>
                             <input id="form_secret" type="text" name="secret" class="form-control"
                                 required="required" value='<?php echo attr($c['appSecret']) ?>'>
                         </div>
@@ -137,20 +174,18 @@ echo "<script>var pid=" . js_escape($pid) . "</script>";
                                 placeholder="<?php echo xlt('Please enter number of hours before appointment') ?> *"
                                 required="required" value='<?php echo attr($c['smsHours']) ?>'>
                         </div>
-                    </div>
-                    <div class="col-md-12">
                         <div class="form-group">
                             <label for="form_message"><?php echo xlt("Message Template") ?> *</label>
                             <span style="font-size:12px;font-style: italic">&nbsp;
-<?php echo xlt("Tags") ?>: ***NAME***, ***PROVIDER***, ***DATE***, ***STARTTIME***, ***ENDTIME***, ***ORG***</span>
+                        <?php echo xlt("Tags") ?>: ***NAME***, ***PROVIDER***, ***DATE***, ***STARTTIME***, ***ENDTIME***, ***ORG***</span>
                             <textarea id="form_message" type="text" rows="3" name="smsmessage" class="form-control"
                                 required="required" value='<?php echo attr($c['smsMessage']) ?>'><?php echo attr($c['smsMessage']) ?></textarea>
                         </div>
-                    </div>
+                    <?php } ?>
                     <div>
-                        <p class="text-muted"><strong>*</strong> <?php echo xlt("These fields are required.") ?> </p>
+                        <span class="text-muted"><strong>*</strong> <?php echo xlt("These fields are required.") ?> </span>
+                        <button type="submit" class="btn btn-success float-right" value=""><?php echo xlt("Save") ?></button>
                     </div>
-                    <button type="submit" class="btn btn-success btn-sm pull-right" value=""><?php echo xlt("Save") ?></button>
                 </div>
             </div>
         </form>

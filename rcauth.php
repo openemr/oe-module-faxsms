@@ -1,20 +1,18 @@
 <?php
+
 /**
  * Fax SMS Module Member
  *
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2018-2021 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-$ignoreAuth = 1;
-require_once(__DIR__ . "/../../../globals.php");
 
-if (empty($_SESSION['url'])) {
-    http_response_code(401);
-    exit();
-}
+$ignoreAuth = 1;
+$sessionAllowWrite = true;
+require_once(__DIR__ . "/../../../globals.php");
 
 use OpenEMR\Common\Crypto\CryptoGen;
 use RingCentral\SDK\SDK;
@@ -25,19 +23,15 @@ $callbackUrl = $_SESSION['redirect_uri'];
 function processCode()
 {
     $vendor = '_ringcentral';
+    $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
     $authUser = 0;
     $credentials = sqlQuery("SELECT * FROM `module_faxsms_credentials` WHERE `auth_user` = ? AND `vendor` = ?", array($authUser, $vendor))['credentials'];
-
-    if(empty($credentials)) {
-        // for legacy
-        $cacheDir = $GLOBALS['OE_SITE_DIR'] . '/documents/logs_and_misc/_cache';
-        $credentials = file_get_contents($cacheDir . '/_credentials.php');
-        if(empty($credentials)) {
-            die('Credential Error');
-        }
+    if (empty($credentials)) {
+        echo xlt("Applications credentials were not found. Please setup account.");
+        die('Credential Error');
     }
     $cryptoGen = new CryptoGen();
-    $credentials = json_decode($cryptoGen->decryptStandard($credentials), true);
+    $credentials = json_decode($cryptoGen->decryptStandard($credentials), true, 512, JSON_THROW_ON_ERROR);
     $serverUrl = !$credentials['production'] ? "https://platform.devtest.ringcentral.com" : "https://platform.ringcentral.com";
 
     $callbackUrl = $credentials['redirect_url'];
@@ -53,7 +47,7 @@ function processCode()
 
     // archive authentication data for future reauths.
     $file = $cacheDir . DIRECTORY_SEPARATOR . 'platform.json';
-    $content = json_encode($platform->auth()->data(), JSON_PRETTY_PRINT);
+    $content = json_encode($platform->auth()->data(), JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
     $cryptoGen = new CryptoGen();
     $content = $cryptoGen->encryptStandard($content);
     file_put_contents($file, $content);
@@ -61,7 +55,7 @@ function processCode()
 
 if (isset($_GET['code'])) {
     processCode();
-    exit();
+    exit;
 }
 ?>
 <script>
@@ -88,7 +82,6 @@ if (isset($_GET['code'])) {
                     if (win.document.URL.indexOf(redirectUrl) !== -1) {
                         window.clearInterval(pollOAuth);
                         win.close();
-                        location.reload();
                     }
                 } catch (e) {
                     //console.log(e);
@@ -100,6 +93,7 @@ if (isset($_GET['code'])) {
 
     window.addEventListener("load", function () {
         if (tokenUrl) {
+            top.restoreSession();
             oauth.loginPopup();
         }
     });
