@@ -1,1 +1,1 @@
-FaxSMS Module v1.0.0 Release v7.0.1
+FaxSMS Module v1.2.0

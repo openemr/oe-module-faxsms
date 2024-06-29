@@ -1,15 +1,13 @@
 <?php
-
 /**
  * Fax SMS Module Member
  *
  * @package   OpenEMR
  * @link      http://www.open-emr.org
  * @author    Jerry Padgett <sjpadgett@gmail.com>
- * @copyright Copyright (c) 2018-2021 Jerry Padgett <sjpadgett@gmail.com>
+ * @copyright Copyright (c) 2018-2019 Jerry Padgett <sjpadgett@gmail.com>
  * @license   https://github.com/openemr/openemr/blob/master/LICENSE GNU General Public License 3
  */
-
 namespace OpenEMR\Modules\FaxSMS\Controllers;
 
 use OpenEMR\Common\Crypto\CryptoGen;
@@ -49,9 +47,7 @@ class RCFaxClient extends AppDispatch
         // is this new user or credentials aren't setup?
         if (!file_exists($this->cacheDir)) {
             // must have this path for platform persist. @todo Move to table!
-            if (!mkdir($concurrentDirectory = $this->cacheDir, 0777, true) && !is_dir($concurrentDirectory)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $concurrentDirectory));
-            }
+            mkdir($this->cacheDir, 0777, true);
         }
 
         $credentials = appDispatch::getSetup();
@@ -73,7 +69,7 @@ class RCFaxClient extends AppDispatch
         return $filepath;
     }
 
-    public function processTokenCode(): bool
+    public function processTokenCode()
     {
         $code = $this->getRequest('code');
         if (!isset($code)) {
@@ -98,48 +94,28 @@ class RCFaxClient extends AppDispatch
         return true;
     }
 
-    public function sendSMS($tophone = null, $subject = null, $message = null, $from = null)
+    public function sendSMS($tophone = '', $subject = '', $message = '', $from = '')
     {
-        if ($this->authenticate() !== 1) {
-            $e = xlt('Error: Authentication Service Denies Access. Not logged in.');
-            if ($this->authenticate() === 2) {
-                $e = xlt('Error: Application account credentials is not setup. Setup in Actions->Account Credentials.');
-            }
-            $ee = array('error' => $e);
-            return json_encode($ee);
-        }
-        $tophone = $tophone ?: $this->getRequest('phone');
-        $message = $message ?: $this->getRequest('comments');
-        $smsNumber = $from ?: $this->credentials['smsNumber'];
+        if (!$this->authenticate()) {
+            return xlj('Error: Authentication Service Denies Access.');
+        };
 
+        $smsNumber = $this->credentials['smsNumber'];
         if ($smsNumber) {
-            try {
-                $response = $this->platform
-                    ->post('/account/~/extension/~/sms', array(
-                        'from' => array('phoneNumber' => attr($smsNumber)),
-                        'to' => array(
-                            array('phoneNumber' => attr($tophone)),
-                        ),
-                        'text' => text($message),
-                    ));
-            } catch (ApiException $e) {
-                $message = $e->getMessage();
-                return 'Error: ' . $message . PHP_EOL;
-            }
+            $response = $this->platform
+                ->post('/account/~/extension/~/sms', array(
+                    'from' => array('phoneNumber' => $smsNumber),
+                    'to' => array(
+                        array('phoneNumber' => $tophone),
+                    ),
+                    'text' => $message,
+                ));
         } else {
-            return xlt("Error: Missing From Phone");
+            return false;
         }
+        sleep(1); // RC May only allow 1/second.
 
-        return xlt("Message Sent");
-    }
-
-    public function getLogIn()
-    {
-        $request_url = $this->platform->authUrl(['redirectUri' => $this->redirectUrl, 'state' => 'login']);
-        $this->setSession('url', $request_url);
-        $this->setSession('redirect_uri', $this->redirectUrl);
-        require('rcauth.php');
-        return $request_url;
+        return true;
     }
 
     public function authenticate($action_flg = '')
@@ -172,9 +148,9 @@ class RCFaxClient extends AppDispatch
         // sendFax, will do an auth check first using this
         // token data array. Session storage token is very
         // unreliable and hardly ever accepted. Still, we try...
-        $session_token = $_SESSION['sessionAccessToken'];
+        $session_token = $this->getSession('sessionAccessToken');
         if (!empty($cachedAuth["refresh_token"])) {
-            // probably new openemr session or user!
+            // probally new openemr session or user!
             $this->platform->auth()->setData($cachedAuth);
         } elseif (isset($session_token)) {
             $this->platform->auth()->setData((array)json_decode($session_token));
@@ -197,12 +173,15 @@ class RCFaxClient extends AppDispatch
             // Using the authUrl to setup a OAuth log in.
             // OAuth redirects to rcauth.php(default) or
             // redirect url from setup. Look there.
+            $request_url = $this->platform->authUrl(['redirectUri' => $this->redirectUrl, 'state' => 'login']);
+            $this->setSession('url', $request_url);
+            $this->setSession('redirect_uri', $this->redirectUrl);
+
             // Init RC's OAuth dialog. Three legs.
-            // if auth check from UI then login dialog will be presented on return.
-            // if fail on API call the UI login button will enable.
-            return 0;
+            require("rcauth.php");
         }
         // Save updated authentication data
+        // sometimes may be empty structure but, we don't care.
         $this->setSession('sessionAccessToken', $this->platform->auth()->data());
         $content = json_encode($this->platform->auth()->data(), JSON_PRETTY_PRINT);
         $content = $this->crypto->encryptStandard($content);
@@ -215,14 +194,9 @@ class RCFaxClient extends AppDispatch
     {
         $docuri = $this->getRequest('docuri');
         $uri = $docuri;
-        if ($this->authenticate() !== 1) {
-            $e = xlt('Error: Authentication Service Denies Access. Not logged in.');
-            if ($this->authenticate() === 2) {
-                $e = xlt('Error: Application account credentials is not setup. Setup in Actions->Account Credentials.');
-            }
-            $ee = array('error' => $e);
-            return json_encode($ee);
-        }
+        if (!$this->authenticate()) {
+            return xlj('Error: Authentication Service Denies Access.');
+        };
         try {
             $apiResponse = $this->platform->get($uri);
         } catch (ApiException $e) {
@@ -237,9 +211,9 @@ class RCFaxClient extends AppDispatch
         } else {
             $doc = (string)$apiResponse->raw();
         }
-        $r = !empty($apiResponse->raw()) ? $apiResponse->raw() : "error";
+        $r = $apiResponse->raw() ? $apiResponse->raw() : "error";
 
-        return !empty($doc) ? $doc : $r;
+        return $doc ? $doc : $r;
     }
 
     /**
@@ -249,24 +223,18 @@ class RCFaxClient extends AppDispatch
     {
         $docid = $this->getRequest('docid');
         $docuri = $this->getRequest('docuri');
-        $doc = '';
         $isDownload = $this->getRequest('download');
         $uri = $docuri;
         $isDownload = $isDownload == 'true' ? 1 : 0;
 
-        if ($this->authenticate() !== 1) {
-            $e = xlt('Error: Authentication Service Denies Access. Not logged in.');
-            if ($this->authenticate() === 2) {
-                $e = xlt('Error: Application account credentials is not setup. Setup in Actions->Account Credentials.');
-            }
-            $ee = array('error' => $e);
-            return json_encode($ee);
-        }
+        if (!$this->authenticate()) {
+            return xlj('Error: Authentication Service Denies Access.');
+        };
 
         $messageStoreDir = $this->baseDir;
 
-        if (!file_exists($messageStoreDir) && !mkdir($messageStoreDir, 0777, true) && !is_dir($messageStoreDir)) {
-            throw new \RuntimeException(sprintf('Directory "%s" was not created', $messageStoreDir));
+        if (!file_exists($messageStoreDir)) {
+            mkdir($messageStoreDir, 0777, true);
         }
 
         try {
@@ -276,22 +244,22 @@ class RCFaxClient extends AppDispatch
             $r = "Error: Retrieving Fax:\n" . $message;
             return $r;
         }
-        $c_header = $apiResponse->response()->getHeader('Content-Type');
-        if ($c_header[0] == 'application/pdf') {
+
+        if ($apiResponse->response()->getHeader('Content-Type')[0] == 'application/pdf') {
             $ext = 'pdf';
             $type = 'Fax';
             $doc = 'data:application/pdf;base64, ' . rawurlencode(base64_encode((string)$apiResponse->raw()));
-        } elseif ($c_header[0] == 'image/tiff') {
+        } elseif ($apiResponse->response()->getHeader('Content-Type')[0] == 'image/tiff') {
             $ext = 'tiff';
             $type = 'Fax';
             $doc = 'data:image/tiff;base64, ' . rawurlencode(base64_encode((string)$apiResponse->raw()));
-        } elseif ($c_header[0] == 'audio/wav' || $c_header[0] == 'audio/x-wav') {
+        } elseif ($apiResponse->response()->getHeader('Content-Type')[0] == 'audio/wav' || $apiResponse->response()->getHeader('Content-Type')[0] == 'audio/x-wav') {
             $ext = 'wav';
             $type = 'Audio';
         } else {
             $ext = 'txt';
             $type = 'Text';
-            $doc = "data:text/plain, " . text((string)$apiResponse->raw());
+            $doc = (string)$apiResponse->raw();
         }
 
         $fname = "${messageStoreDir}/${type}_${docid}.${ext}";
@@ -300,11 +268,12 @@ class RCFaxClient extends AppDispatch
             $this->setSession('where', $fname);
             return $fname;
         }
+        $furi = "$this->baseDir/${type}_${docid}.${ext}";
 
         return $doc;
     }
 
-    public function disposeDoc($content = ''): void
+    public function disposeDoc($content = '')
     {
         $where = $this->getSession('where');
         if (file_exists($where)) {
@@ -324,27 +293,20 @@ class RCFaxClient extends AppDispatch
         die(xlt('Problem with download. Use browser back button'));
     }
 
-    public function sendFax(): string
+    public function sendFax()
     {
-        if ($this->authenticate() !== 1) {
-            $e = xlt('Error: Authentication Service Denies Access. Not logged in.');
-            if ($this->authenticate() === 2) {
-                $e = xlt('Error: Application account credentials is not setup. Setup in Actions->Account Credentials.');
-            }
-            $ee = array('error' => $e);
-            return json_encode($ee);
+        if (!$this->authenticate()) {
+            return xlt('Error: Authentication Service Denies Access.');
         }
         $isContent = $this->getRequest('isContent');
         $file = $this->getRequest('file');
-        $mime = $this->getRequest('mime');
         $phone = $this->getRequest('phone');
         $name = $this->getRequest('name');
         $lastname = $this->getRequest('surname');
         $isDocuments = $this->getRequest('isDocuments');
         $comments = $this->getRequest('comments');
-        $name .= ' ' . $lastname;
+        $name = $name . ' ' . $lastname;
         $content = '';
-
         if ($isDocuments == 'true') {
             $file = str_replace("file://", '', $file);
             $file = str_replace("\\", "/", realpath($file)); // normalize requested path
@@ -364,10 +326,7 @@ class RCFaxClient extends AppDispatch
         }
         try {
             // do the request
-            $type = \GuzzleHttp\Psr7\MimeType::fromFilename(basename($file));
-            if (empty($type)) {
-                $type = $mime;
-            }
+            $type = \GuzzleHttp\Psr7\mimetype_from_filename(basename($file));
             $request = $this->rcsdk->createMultipartBuilder()
                 ->setBody(array(
                     'to' => array(
@@ -376,9 +335,9 @@ class RCFaxClient extends AppDispatch
                             'name' => $name)
                     ),
                     'faxResolution' => 'High',
-                    'coverPageText' => text($comments)
+                    'coverPageText' => $comments
                 ))
-                ->add($content, $file, array('Content-Type' => (string)$type))
+                ->add($content, $file, array('Content-Type' => "$type"))
                 ->request('/account/~/extension/~/fax');
 
             $response = $this->platform->sendRequest($request);
@@ -441,14 +400,9 @@ class RCFaxClient extends AppDispatch
         $fromDate = $this->getRequest('datefrom');
         $toDate = $this->getRequest('dateto');
 
-        if ($this->authenticate() !== 1) {
-            $e = xlt('Error: Authentication Service Denies Access. Not logged in.');
-            if ($this->authenticate() === 2) {
-                $e = xlt('Error: Application account credentials is not setup. Setup in Actions->Account Credentials.');
-            }
-            $ee = array('error' => $e);
-            return json_encode($ee);
-        }
+        if (!$this->authenticate()) {
+            return xlt('Error: Authentication Service Denies Access.');
+        };
         try {
             // constants
             $pageCount = 1;
@@ -511,14 +465,11 @@ class RCFaxClient extends AppDispatch
         $dateFrom = $this->getRequest('datefrom');
         $dateTo = $this->getRequest('dateto');
 
-        if ($this->authenticate() !== 1) {
-            $e = xlt('Error: Authentication Service Denies Access. Not logged in.');
-            if ($this->authenticate() === 2) {
-                $e = xlt('Error: Application account credentials is not setup. Setup in Actions->Account Credentials.');
-            }
+        if (!$this->authenticate()) {
+            $e = xlt('Error: Authentication Service Denies Access.');
             $ee = array('error' => $e);
             return json_encode($ee);
-        }
+        };
         try {
             // Writing the call-log response to json file
             $dir = 'fax';
@@ -526,11 +477,9 @@ class RCFaxClient extends AppDispatch
 
             //Create the Directory
             if (!file_exists($messageStoreDir)) {
-                if (!mkdir($messageStoreDir, 0777, true) && !is_dir($messageStoreDir)) {
-                    throw new \RuntimeException(sprintf('Directory "%s" was not created', $messageStoreDir));
-                }
+                mkdir($messageStoreDir, 0777, true);
             }
-            // dateFrom and dateTo parameters
+            // dateFrom and dateTo paramteres
             $timeFrom = 'T00:00:01.000Z';
             $timeTo = 'T23:59:59.000Z';
             $dateFrom = trim($dateFrom) . $timeFrom;
@@ -543,34 +492,24 @@ class RCFaxClient extends AppDispatch
             ))->json()->records;
 
             $responseMsgs = [];
-            foreach ($messageStoreList as $ilist => $messageStore) {
+            foreach ($messageStoreList as $i => $messageStore) {
                 if (property_exists($messageStore, 'attachments')) {
                     foreach ($messageStore->attachments as $i => $attachment) {
-                        $id = attr($attachment->id);
+                        $id = $attachment->id;
                         $uri = $attachment->uri;
                         $to = $messageStore->to[0]->name . " " . $messageStore->to[0]->phoneNumber;
                         $from = $messageStore->from->name . " " . $messageStore->from->phoneNumber;
-                        $errors = $messageStore->to[0]->faxErrorCode ? "Why: " . $messageStore->to[0]->faxErrorCode : $messageStore->from->faxErrorCode;
+                        $errors = $messageStore->to[0]->faxErrorCode ? "why: " . $messageStore->to[0]->faxErrorCode : $messageStore->from->faxErrorCode;
                         $status = $messageStore->messageStatus . " " . $errors;
-                        $aUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','$id','true')>" . $id . " <span class='fa fa-download'></span></a></br>";
-                        $vUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','$id','false')> <span class='fa fa-file-pdf'></span></a></br>";
-
-                        $utc_time = strtotime($messageStore->lastModifiedTime . ' UTC');
-                        $updateDate =  date('M j Y g:i:sa T', $utc_time);
+                        $aUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','${id}','true')>" . ${id} . " <span class='fa fa-download'></span></a></br>";
+                        $vUrl = "<a href='#' onclick=getDocument(" . "event,'$uri','${id}','false')> <span class='fa fa-file-pdf-o'></span></a></br>";
 
                         if (strtolower($messageStore->type) === "sms") {
-                            $messageText = $this->getMessageContent($uri);
-                            $vtoggle = "<a href='javascript:' onclick=messageShow('" . $id . "')><span class='mx-1 fa fa-eye-slash fa-1x'></span></a>";
-                            $vreply = "<a href='javascript:' onclick=messageReply(" . attr_js($messageStore->from->phoneNumber) . ")><span class='mx-1 fa fa-reply'></span></a>";
-                            $responseMsgs[2] .= "<tr><td>" . str_replace(array("T", "Z"), " ", $updateDate) .
-                                "</td><td>" . $messageStore->type . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status .
-                                "</td><td><span class='$id'>" . substr($messageText, 0, 30) . "</span>" .
-                                "<div class='d-none $id'>" . $messageText . "</div></td>" .
-                                "<td class='btn-group'>" . $vtoggle . $vreply . "</td></tr>";
+                            $responseMsgs[2] .= "<tr><td>" . str_replace(array("T", "Z"), " ", $messageStore->lastModifiedTime) . "</td><td>" . $messageStore->type . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><td>" . $aUrl . "</td><td>" . $vUrl . "</td></tr>";
                         } elseif (strtolower($messageStore->direction) === "inbound") {
-                            $responseMsgs[0] .= "<tr><td>" . str_replace(array("T", "Z"), " ", $updateDate) . "</td><td>" . $messageStore->type . "</td><td>" . $messageStore->faxPageCount . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><td>" . $aUrl . "</td><td>" . $vUrl . "</td></tr>";
+                            $responseMsgs[0] .= "<tr><td>" . str_replace(array("T", "Z"), " ", $messageStore->lastModifiedTime) . "</td><td>" . $messageStore->type . "</td><td>" . $messageStore->faxPageCount . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><td>" . $aUrl . "</td><td>" . $vUrl . "</td></tr>";
                         } else {
-                            $responseMsgs[1] .= "<tr><td>" . str_replace(array("T", "Z"), " ", $updateDate) . "</td><td>" . $messageStore->type . "</td><td>" . $messageStore->faxPageCount . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><td>" . $aUrl . "</td><td>" . $vUrl . "</td></tr>";
+                            $responseMsgs[1] .= "<tr><td>" . str_replace(array("T", "Z"), " ", $messageStore->lastModifiedTime) . "</td><td>" . $messageStore->type . "</td><td>" . $messageStore->faxPageCount . "</td><td>" . $from . "</td><td>" . $to . "</td><td>" . $status . "</td><td>" . $aUrl . "</td><td>" . $vUrl . "</td></tr>";
                         }
                     }
                 } else {
@@ -585,23 +524,78 @@ class RCFaxClient extends AppDispatch
             exit();
         }
         if (empty($responseMsgs)) {
-            $empty_msg = xlt("Nothing to report");
-            $responseMsgs = [$empty_msg, $empty_msg, $empty_msg];
+            $responseMsgs = "empty";
         }
         echo json_encode($responseMsgs);
         exit();
     }
 
-    public function getMessageContent($uri)
+    public function getMessage()
     {
+        if (!$this->authenticate()) {
+            return xlj('Error: Authentication Service Denies Access.');
+        };
         try {
-            $apiResponse = $this->platform->get($uri);
-        } catch (ApiException $e) {
-            return '';
-        }
-        $msgText = text((string)$apiResponse->raw());
+            // Writing the call-log response to json file
+            $messageStoreDir = $this->baseDir;
 
-        return $msgText;
+            //Create the Directory
+            if (!file_exists($messageStoreDir)) {
+                mkdir($messageStoreDir, 0777, true);
+            }
+
+            $messageStoreList = $this->platform->get('/account/~/extension/~/message-store', array(
+                'messageType' => "",
+                'dateFrom' => '2018-05-01'
+            ))->json()->records;
+
+            $timePerMessageStore = 6;
+            $responseMsgs = "";
+            foreach ($messageStoreList as $i => $messageStore) {
+                if (property_exists($messageStore, 'attachments')) {
+                    foreach ($messageStore->attachments as $i => $attachment) {
+                        $id = $attachment->id;
+                        $uri = $attachment->uri;
+                        try {
+                            $apiResponse = $this->platform->get($uri);
+                        } catch (ApiException $e) {
+                            $message = $e->getMessage() . $e->apiResponse()->request()->getUri()->__toString();
+                            $responseMsgs .= "<tr><td>Errors: " . $message . "</td></tr>";
+                            continue;
+                        }
+                        // Retrieve the appropriate extension type of the message
+                        if ($apiResponse->response()->getHeader('Content-Type')[0] == 'application/pdf') {
+                            $ext = 'pdf';
+                            $type = 'Fax';
+                        } elseif ($apiResponse->response()->getHeader('Content-Type')[0] == 'audio/mpeg') {
+                            $ext = 'mp3';
+                            $type = 'VoiceMail';
+                        } else {
+                            $ext = 'txt';
+                            $type = 'SMS';
+                        }
+
+                        $start = microtime(true);
+                        file_put_contents("${messageStoreDir}/${type}_${id}.${ext}", $apiResponse->raw());
+                        $responseMsgs .= "<tr><td>" . $messageStore->creationTime . "</td><td>" . $messageStore->type . "</td><td>" . $messageStore->from->name . "</td><td>" . $messageStore->to->name . "</td><td>" . $messageStore->availability . "</td><td>" . $messageStore->messageStatus . "</td><td>" . $messageStore->message->id . "</td></tr>";
+                        $end = microtime(true);
+                        $time = ($end * 1000 - $start * 1000);
+                        if ($time < $timePerMessageStore) {
+                            sleep($timePerMessageStore - $time);
+                        }
+                    }
+                } else {
+                    echo xlt("Does not have messages") . PHP_EOL;
+                }
+            }
+        } catch (ApiException $e) {
+            $message = $e->getMessage() . $e->apiResponse()->request()->getUri()->__toString();
+            echo "<tr><td>Error: " . $message . "</td></tr>";
+            exit();
+        }
+
+        echo $responseMsgs;
+        exit();
     }
 
     protected function index()
